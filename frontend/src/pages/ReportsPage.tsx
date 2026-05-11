@@ -10,12 +10,15 @@ interface TransactionRecord {
   total_amount: number;
   created_at: string;
   profiles: { full_name: string } | null;
+  transaction_items: { quantity: number }[];
 }
 
 const ReportsPage: React.FC = () => {
   const [transactions, setTransactions] = useState<TransactionRecord[]>([]);
   const [stats, setStats] = useState({
     totalRevenue: 0,
+    totalBooksSold: 0,
+    totalBooksRestocked: 0,
     outCount: 0,
     inCount: 0
   });
@@ -29,24 +32,46 @@ const ReportsPage: React.FC = () => {
     setLoading(true);
     
     // Fetch transactions with profile info
-    const { data } = await supabase
-      .from('transactions')
+    const { data, error } = await (supabase
+      .from('transactions') as any)
       .select(`
         *,
-        profiles (full_name)
+        profiles (full_name),
+        transaction_items (quantity)
       `)
       .order('created_at', { ascending: false });
 
+    if (error) {
+      console.error('Error fetching reports:', error);
+    }
+
     if (data) {
-      setTransactions(data as unknown as TransactionRecord[]);
+      console.log('Report Data:', data); // Untuk debugging
+      const records = data as unknown as TransactionRecord[];
+      setTransactions(records);
       
-      // Calculate simple stats
-      const outTrans = (data as any[]).filter(t => t.type === 'out');
-      const inTrans = (data as any[]).filter(t => t.type === 'in');
-      const revenue = outTrans.reduce((sum, t) => sum + (t.total_amount || 0), 0);
+      let revenue = 0;
+      let soldQty = 0;
+      let restockQty = 0;
+      
+      const outTrans = records.filter(t => t.type === 'out');
+      const inTrans = records.filter(t => t.type === 'in');
+
+      outTrans.forEach(t => {
+        revenue += (t.total_amount || 0);
+        const qty = t.transaction_items?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0;
+        soldQty += qty;
+      });
+
+      inTrans.forEach(t => {
+        const qty = t.transaction_items?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0;
+        restockQty += qty;
+      });
       
       setStats({
         totalRevenue: revenue,
+        totalBooksSold: soldQty,
+        totalBooksRestocked: restockQty,
         outCount: outTrans.length,
         inCount: inTrans.length
       });
@@ -82,15 +107,15 @@ const ReportsPage: React.FC = () => {
         />
         <StatCard 
           label="Buku Terjual" 
-          value={stats.outCount.toString()} 
+          value={stats.totalBooksSold.toString()} 
           icon="shopping_cart_checkout" 
-          trend="Total Transaksi Keluar"
+          trend={`${stats.outCount} Transaksi Keluar`}
         />
         <StatCard 
           label="Stok Masuk" 
-          value={stats.inCount.toString()} 
+          value={stats.totalBooksRestocked.toString()} 
           icon="library_add" 
-          trend="Total Transaksi Masuk"
+          trend={`${stats.inCount} Transaksi Masuk`}
         />
       </div>
 
