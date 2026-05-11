@@ -21,6 +21,7 @@ const BookManagementPage: React.FC = () => {
     stock: 0,
     price: 0,
   });
+  const [editingBookId, setEditingBookId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -51,26 +52,43 @@ const BookManagementPage: React.FC = () => {
   const handleAddBook = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const { error } = await supabase.from('books').insert([
-      {
-        isbn: newBook.isbn,
-        title: newBook.title,
-        author: newBook.author,
-        category_id: newBook.category_id || null,
-        location_id: newBook.location_id || null,
-        stock: newBook.stock,
-        price: newBook.price,
-      }
-    ]);
+    const bookData: any = {
+      isbn: newBook.isbn,
+      title: newBook.title,
+      author: newBook.author,
+      category_id: newBook.category_id || null,
+      location_id: newBook.location_id || null,
+      stock: newBook.stock,
+      price: newBook.price,
+    };
+
+    const { error } = editingBookId 
+      ? await (supabase.from('books') as any).update(bookData).eq('id', editingBookId)
+      : await (supabase.from('books') as any).insert([bookData]);
 
     if (!error) {
       setIsModalOpen(false);
+      setEditingBookId(null);
       setNewBook({ isbn: '', title: '', author: '', category_id: '', location_id: '', stock: 0, price: 0 });
-      showAlert('Buku berhasil ditambahkan!', 'success');
+      showAlert(editingBookId ? 'Buku berhasil diperbarui!' : 'Buku berhasil ditambahkan!', 'success');
       fetchData();
     } else {
-      showAlert('Gagal menambah buku: ' + error.message, 'error');
+      showAlert('Gagal menyimpan data: ' + error.message, 'error');
     }
+  };
+
+  const handleEditClick = (book: Book) => {
+    setEditingBookId(book.id);
+    setNewBook({
+      isbn: book.isbn,
+      title: book.title,
+      author: book.author,
+      category_id: book.category_id || '',
+      location_id: book.location_id || '',
+      stock: book.stock,
+      price: book.price
+    });
+    setIsModalOpen(true);
   };
 
   const deleteBook = (id: string) => {
@@ -146,7 +164,10 @@ const BookManagementPage: React.FC = () => {
                       </td>
                       <td className="py-4 px-6 text-right">
                         <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button className="p-2 hover:bg-surface-container rounded-lg text-secondary hover:text-primary transition-colors">
+                          <button 
+                            onClick={() => handleEditClick(book)}
+                            className="p-2 hover:bg-surface-container rounded-lg text-secondary hover:text-primary transition-colors"
+                          >
                             <span className="material-symbols-outlined text-[20px]">edit</span>
                           </button>
                           <button 
@@ -171,7 +192,7 @@ const BookManagementPage: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-surface-container-lowest w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
             <div className="p-6 border-b border-outline-variant flex justify-between items-center">
-              <h3 className="font-headline-sm text-primary">Tambah Buku Baru</h3>
+              <h3 className="font-headline-sm text-primary">{editingBookId ? 'Edit Data Buku' : 'Tambah Buku Baru'}</h3>
               <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-surface-container rounded-full transition-colors">
                 <span className="material-symbols-outlined">close</span>
               </button>
@@ -216,8 +237,8 @@ const BookManagementPage: React.FC = () => {
                 </div>
               </div>
               <div className="pt-4 flex gap-3">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-2 border border-outline-variant rounded-full text-secondary">Batal</button>
-                <button type="submit" className="flex-1 py-2 bg-primary text-white rounded-full font-bold shadow-md">Simpan</button>
+                <button type="button" onClick={() => { setIsModalOpen(false); setEditingBookId(null); }} className="flex-1 py-2 border border-outline-variant rounded-full text-secondary">Batal</button>
+                <button type="submit" className="flex-1 py-2 bg-primary text-white rounded-full font-bold shadow-md">{editingBookId ? 'Perbarui' : 'Simpan'}</button>
               </div>
             </form>
           </div>

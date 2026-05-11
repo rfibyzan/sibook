@@ -56,11 +56,11 @@ const StockInPage: React.FC = () => {
     setIsLoading(true);
 
     // 1. Simpan Header Transaksi (Tipe 'in')
-    const { data: transData, error: transError } = await supabase
-      .from('transactions')
+    const { data: transData, error: transError } = await (supabase
+      .from('transactions') as any)
       .insert({
-        type: 'in' as const,
-        user_id: user?.id,
+        type: 'in',
+        user_id: user?.id || null,
         total_amount: 0, 
         invoice_number: `RST-${Date.now()}`
       } as any)
@@ -75,15 +75,15 @@ const StockInPage: React.FC = () => {
 
     // 2. Simpan Detail Items
     const itemsToInsert = cart.map(item => ({
-      transaction_id: transData.id,
+      transaction_id: (transData as any).id,
       book_id: item.id,
       quantity: item.quantity,
       unit_price: 0
     }));
 
-    const { error: itemsError } = await supabase
-      .from('transaction_items')
-      .insert(itemsToInsert);
+    const { error: itemsError } = await (supabase
+      .from('transaction_items') as any)
+      .insert(itemsToInsert as any);
 
     if (itemsError) {
       showAlert('Gagal simpan detail: ' + itemsError.message, 'error');

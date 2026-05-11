@@ -10,6 +10,7 @@ const LocationsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newLocation, setNewLocation] = useState({ rack_code: '', section: '', capacity: 0 });
+  const [editingLocationId, setEditingLocationId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchLocations();
@@ -27,18 +28,25 @@ const LocationsPage: React.FC = () => {
 
   const handleAddLocation = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { error } = await supabase
-      .from('locations')
-      .insert([newLocation]);
+    const { error } = editingLocationId
+      ? await (supabase.from('locations') as any).update(newLocation as any).eq('id', editingLocationId)
+      : await (supabase.from('locations') as any).insert([newLocation] as any);
 
     if (!error) {
       setIsModalOpen(false);
+      setEditingLocationId(null);
       setNewLocation({ rack_code: '', section: '', capacity: 0 });
-      showAlert('Lokasi rak berhasil ditambahkan!', 'success');
+      showAlert(editingLocationId ? 'Lokasi rak berhasil diperbarui!' : 'Lokasi rak berhasil ditambahkan!', 'success');
       fetchLocations();
     } else {
-      showAlert('Gagal menambah lokasi: ' + error.message, 'error');
+      showAlert('Gagal menyimpan lokasi: ' + error.message, 'error');
     }
+  };
+
+  const handleEditClick = (loc: Location) => {
+    setEditingLocationId(loc.id);
+    setNewLocation({ rack_code: loc.rack_code, section: loc.section, capacity: loc.capacity });
+    setIsModalOpen(true);
   };
 
   const deleteLocation = (id: string) => {
@@ -94,12 +102,20 @@ const LocationsPage: React.FC = () => {
                   <p className="text-[11px] text-secondary uppercase tracking-wider">Seksi {loc.section}</p>
                 </div>
               </div>
-              <button 
-                onClick={() => deleteLocation(loc.id)}
-                className="text-outline hover:text-error opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <span className="material-symbols-outlined text-[20px]">delete</span>
-              </button>
+              <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button 
+                  onClick={() => handleEditClick(loc)}
+                  className="text-outline hover:text-primary"
+                >
+                  <span className="material-symbols-outlined text-[20px]">edit</span>
+                </button>
+                <button 
+                  onClick={() => deleteLocation(loc.id)}
+                  className="text-outline hover:text-error"
+                >
+                  <span className="material-symbols-outlined text-[20px]">delete</span>
+                </button>
+              </div>
             </div>
             
             <div className="space-y-4">
@@ -130,7 +146,7 @@ const LocationsPage: React.FC = () => {
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-surface-container-lowest w-full max-w-md rounded-[32px] shadow-2xl p-8 animate-in zoom-in-95 duration-200">
-            <h3 className="font-headline-sm text-on-surface mb-6">Tambah Rak Baru</h3>
+            <h3 className="font-headline-sm text-on-surface mb-6">{editingLocationId ? 'Edit Lokasi Rak' : 'Tambah Rak Baru'}</h3>
             <form onSubmit={handleAddLocation} className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
@@ -165,7 +181,7 @@ const LocationsPage: React.FC = () => {
               <div className="flex gap-3 pt-2">
                 <button 
                   type="button" 
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={() => { setIsModalOpen(false); setEditingLocationId(null); }}
                   className="flex-1 py-3 border border-outline-variant rounded-full font-bold text-on-surface hover:bg-surface-container transition-all"
                 >
                   Batal
@@ -174,7 +190,7 @@ const LocationsPage: React.FC = () => {
                   type="submit"
                   className="flex-1 py-3 bg-primary text-white rounded-full font-bold shadow-lg hover:bg-primary/90 transition-all"
                 >
-                  Simpan Rak
+                  {editingLocationId ? 'Perbarui' : 'Simpan'}
                 </button>
               </div>
             </form>

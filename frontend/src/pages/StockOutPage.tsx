@@ -19,6 +19,7 @@ const StockOutPage: React.FC = () => {
   const [availableBooks, setAvailableBooks] = useState<Book[]>([]);
   const [cart, setCart] = useState<SaleItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
@@ -70,14 +71,14 @@ const StockOutPage: React.FC = () => {
     setIsLoading(true);
 
     // 1. Simpan Header Transaksi
-    const { data: transData, error: transError } = await supabase
-      .from('transactions')
+    const { data: transData, error: transError } = await (supabase
+      .from('transactions') as any)
       .insert({
-        type: 'out' as const,
-        user_id: user?.id,
+        type: 'out',
+        user_id: user?.id || null,
         total_amount: total,
         invoice_number: `TRS-${Date.now()}`
-      } as any) // Gunakan any sementara jika definisi Database di types.ts masih sinkronisasi
+      } as any)
       .select()
       .single();
 
@@ -89,21 +90,23 @@ const StockOutPage: React.FC = () => {
 
     // 2. Simpan Detail Items
     const itemsToInsert = cart.map(item => ({
-      transaction_id: transData.id,
+      transaction_id: (transData as any).id,
       book_id: item.id,
       quantity: item.quantity,
       unit_price: item.price
     }));
 
-    const { error: itemsError } = await supabase
-      .from('transaction_items')
-      .insert(itemsToInsert);
+    const { error: itemsError } = await (supabase
+      .from('transaction_items') as any)
+      .insert(itemsToInsert as any);
 
     if (itemsError) {
       showAlert('Gagal simpan detail: ' + itemsError.message, 'error');
     } else {
       showAlert('Transaksi Berhasil! Stok database telah diperbarui.', 'success');
       setCart([]);
+      setIsSuccess(true);
+      setTimeout(() => setIsSuccess(false), 5000);
       fetchBooks(); // Refresh stok
     }
     

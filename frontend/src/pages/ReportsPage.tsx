@@ -38,11 +38,11 @@ const ReportsPage: React.FC = () => {
       .order('created_at', { ascending: false });
 
     if (data) {
-      setTransactions(data as any);
+      setTransactions(data as unknown as TransactionRecord[]);
       
       // Calculate simple stats
-      const outTrans = data.filter(t => t.type === 'out');
-      const inTrans = data.filter(t => t.type === 'in');
+      const outTrans = (data as any[]).filter(t => t.type === 'out');
+      const inTrans = (data as any[]).filter(t => t.type === 'in');
       const revenue = outTrans.reduce((sum, t) => sum + (t.total_amount || 0), 0);
       
       setStats({

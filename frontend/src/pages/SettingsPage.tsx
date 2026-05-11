@@ -113,7 +113,7 @@ const SettingsPage: React.FC = () => {
       if (!croppedImageBlob) throw new Error('Gagal memproses gambar.');
 
       const fileName = `${user?.id}-${Date.now()}.jpg`;
-      const { data, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(fileName, croppedImageBlob);
 

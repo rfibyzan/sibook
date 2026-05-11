@@ -10,6 +10,7 @@ const CategoriesPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newCategory, setNewCategory] = useState({ name: '', description: '' });
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchCategories();
@@ -27,18 +28,25 @@ const CategoriesPage: React.FC = () => {
 
   const handleAddCategory = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { error } = await supabase
-      .from('categories')
-      .insert([newCategory]);
+    const { error } = editingCategoryId
+      ? await (supabase.from('categories') as any).update(newCategory as any).eq('id', editingCategoryId)
+      : await (supabase.from('categories') as any).insert([newCategory] as any);
 
     if (!error) {
       setIsModalOpen(false);
+      setEditingCategoryId(null);
       setNewCategory({ name: '', description: '' });
-      showAlert('Kategori berhasil ditambahkan!', 'success');
+      showAlert(editingCategoryId ? 'Kategori berhasil diperbarui!' : 'Kategori berhasil ditambahkan!', 'success');
       fetchCategories();
     } else {
-      showAlert('Gagal menambah kategori: ' + error.message, 'error');
+      showAlert('Gagal menyimpan kategori: ' + error.message, 'error');
     }
+  };
+
+  const handleEditClick = (cat: Category) => {
+    setEditingCategoryId(cat.id);
+    setNewCategory({ name: cat.name, description: cat.description || '' });
+    setIsModalOpen(true);
   };
 
   const deleteCategory = (id: string) => {
@@ -88,12 +96,20 @@ const CategoriesPage: React.FC = () => {
               <div className="w-12 h-12 bg-primary/10 text-primary rounded-xl flex items-center justify-center">
                 <span className="material-symbols-outlined text-[24px]">category</span>
               </div>
-              <button 
-                onClick={() => deleteCategory(cat.id)}
-                className="text-outline hover:text-error opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <span className="material-symbols-outlined">delete</span>
-              </button>
+              <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button 
+                  onClick={() => handleEditClick(cat)}
+                  className="text-outline hover:text-primary"
+                >
+                  <span className="material-symbols-outlined">edit</span>
+                </button>
+                <button 
+                  onClick={() => deleteCategory(cat.id)}
+                  className="text-outline hover:text-error"
+                >
+                  <span className="material-symbols-outlined">delete</span>
+                </button>
+              </div>
             </div>
             <h3 className="font-title-lg text-on-surface mb-2">{cat.name}</h3>
             <p className="font-body-sm text-secondary line-clamp-2 min-h-[40px]">
@@ -112,7 +128,7 @@ const CategoriesPage: React.FC = () => {
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-surface-container-lowest w-full max-w-md rounded-[32px] shadow-2xl p-8 animate-in zoom-in-95 duration-200">
-            <h3 className="font-headline-sm text-on-surface mb-6">Tambah Kategori Baru</h3>
+            <h3 className="font-headline-sm text-on-surface mb-6">{editingCategoryId ? 'Edit Kategori' : 'Tambah Kategori Baru'}</h3>
             <form onSubmit={handleAddCategory} className="space-y-6">
               <div className="flex flex-col gap-1.5">
                 <label className="font-label-uppercase text-secondary text-[11px] uppercase tracking-wider">Nama Kategori</label>
@@ -137,7 +153,7 @@ const CategoriesPage: React.FC = () => {
               <div className="flex gap-3 pt-2">
                 <button 
                   type="button" 
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={() => { setIsModalOpen(false); setEditingCategoryId(null); }}
                   className="flex-1 py-3 border border-outline-variant rounded-full font-bold text-on-surface hover:bg-surface-container transition-all"
                 >
                   Batal
@@ -146,7 +162,7 @@ const CategoriesPage: React.FC = () => {
                   type="submit"
                   className="flex-1 py-3 bg-primary text-white rounded-full font-bold shadow-lg hover:bg-primary/90 transition-all"
                 >
-                  Simpan
+                  {editingCategoryId ? 'Perbarui' : 'Simpan'}
                 </button>
               </div>
             </form>
