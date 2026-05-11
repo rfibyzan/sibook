@@ -49,12 +49,21 @@ const StockOutPage: React.FC = () => {
     setSearchTerm('');
   };
 
-  const updateQuantity = (id: string, newQty: number, max: number) => {
-    if (newQty > max) {
-      showAlert('Melebihi stok yang tersedia!', 'error');
-      return;
+  const formatNumber = (num: number | string) => {
+    const value = num.toString().replace(/\D/g, '');
+    return value.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  };
+
+  const parseNumber = (str: string, max: number) => {
+    let val = parseInt(str.replace(/\./g, '')) || 0;
+    if (val > max) {
+      showAlert(`Maksimal stok tersedia: ${max} pcs`, 'warning');
+      return max;
     }
-    if (newQty < 1) return;
+    return Math.max(1, val);
+  };
+
+  const updateQuantity = (id: string, newQty: number) => {
     setCart(cart.map(item => item.id === id ? { ...item, quantity: newQty } : item));
   };
 
@@ -180,7 +189,7 @@ const StockOutPage: React.FC = () => {
                 <thead className="bg-surface-container-low border-b border-outline-variant text-left">
                   <tr>
                     <th className="px-4 py-3 font-label-uppercase text-secondary text-[11px]">Item</th>
-                    <th className="px-4 py-3 font-label-uppercase text-secondary text-[11px] w-32 text-center">Qty</th>
+                    <th className="px-4 py-3 font-label-uppercase text-secondary text-[11px] w-40 text-center">Jumlah</th>
                     <th className="px-4 py-3 font-label-uppercase text-secondary text-[11px] text-right">Harga</th>
                     <th className="px-4 py-3 font-label-uppercase text-secondary text-[11px] text-right">Subtotal</th>
                     <th className="px-4 py-3 w-10"></th>
@@ -196,16 +205,20 @@ const StockOutPage: React.FC = () => {
                           <p className="text-xs text-secondary">{item.isbn}</p>
                         </td>
                         <td className="px-4 py-4">
-                          <div className="flex items-center justify-center border border-outline-variant rounded-lg overflow-hidden bg-surface">
-                            <button onClick={() => updateQuantity(item.id, item.quantity - 1, original?.stock || 0)} className="px-3 py-1 hover:bg-surface-container">-</button>
-                            <span className="w-10 text-center font-bold">{item.quantity}</span>
-                            <button onClick={() => updateQuantity(item.id, item.quantity + 1, original?.stock || 0)} className="px-3 py-1 hover:bg-surface-container">+</button>
+                          <div className="flex items-center justify-center border border-outline-variant rounded-xl bg-surface-container-low max-w-[140px] mx-auto px-2">
+                            <input 
+                              type="text"
+                              className="w-full h-10 bg-transparent text-center font-bold text-on-surface outline-none"
+                              value={formatNumber(item.quantity)}
+                              onChange={(e) => updateQuantity(item.id, parseNumber(e.target.value, original?.stock || 0))}
+                            />
+                            <span className="text-[10px] text-secondary font-bold ml-1">PCS</span>
                           </div>
                         </td>
                         <td className="px-4 py-4 text-right font-data-tabular text-on-surface">Rp {item.price.toLocaleString()}</td>
                         <td className="px-4 py-4 text-right font-data-tabular text-on-surface font-bold">Rp {(item.quantity * item.price).toLocaleString()}</td>
                         <td className="px-4 py-4 text-center">
-                          <button onClick={() => removeFromCart(item.id)} className="text-outline hover:text-error"><span className="material-symbols-outlined">delete</span></button>
+                          <button onClick={() => removeFromCart(item.id)} className="text-outline hover:text-error transition-colors"><span className="material-symbols-outlined">delete</span></button>
                         </td>
                       </tr>
                     );
