@@ -240,9 +240,12 @@ const SettingsPage: React.FC = () => {
                   <input type="text" value={fullName} onChange={e => setFullName(e.target.value)} className="w-full h-12 px-4 rounded-xl border border-outline-variant bg-surface outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all" />
                 </div>
 
-                <div className="flex flex-col gap-1.5">
-                  <label className="font-label-uppercase text-secondary text-[11px] uppercase tracking-wider">Jabatan / Role</label>
-                  <select value={role} onChange={e => setRole(e.target.value)} className="w-full h-12 px-4 rounded-xl border border-outline-variant bg-surface outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer">
+                <div className="flex flex-col gap-1.5 opacity-70">
+                  <label className="font-label-uppercase text-secondary text-[11px] uppercase tracking-wider flex justify-between">
+                    Jabatan / Role
+                    <span className="text-[9px] lowercase italic normal-case tracking-normal">(Hanya dapat diubah oleh Admin)</span>
+                  </label>
+                  <select disabled value={role} className="w-full h-12 px-4 rounded-xl border border-outline-variant bg-surface-container-low outline-none cursor-not-allowed">
                     <option value="Owner">Owner</option>
                     <option value="Manager">Manager</option>
                     <option value="Kasir">Kasir</option>

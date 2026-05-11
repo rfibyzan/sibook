@@ -7,13 +7,22 @@ import { createClient } from '@supabase/supabase-js';
 interface UserProfile {
   id: string;
   full_name: string;
+  email: string;
   avatar_url: string;
   role: string;
   updated_at: string;
 }
 
+const rolePriority: Record<string, number> = {
+  'Owner': 1,
+  'Manager': 2,
+  'Kasir': 3,
+  'Staff': 4
+};
+
 const UsersPage: React.FC = () => {
   const { showAlert, showConfirm } = useNotification();
+  const { profile: currentUser } = useAuth();
   const [profiles, setProfiles] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -33,10 +42,18 @@ const UsersPage: React.FC = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('profiles')
-      .select('*')
-      .order('full_name', { ascending: true });
+      .select('*');
     
-    if (data) setProfiles(data);
+    if (data) {
+      // Sort by hierarchy priority
+      const sortedData = (data as UserProfile[]).sort((a, b) => {
+        const priorityA = rolePriority[a.role] || 5;
+        const priorityB = rolePriority[b.role] || 5;
+        if (priorityA !== priorityB) return priorityA - priorityB;
+        return a.full_name.localeCompare(b.full_name);
+      });
+      setProfiles(sortedData);
+    }
     if (error) showAlert('Gagal mengambil data user: ' + error.message, 'error');
     setLoading(false);
   };
@@ -110,9 +127,32 @@ const UsersPage: React.FC = () => {
     });
   };
 
+  // RBAC Helper: Get Available Roles for Select
+  const getAvailableRoles = () => {
+    if (currentUser?.role === 'Owner') {
+      return ['Manager', 'Kasir', 'Staff'];
+    }
+    if (currentUser?.role === 'Manager') {
+      return ['Kasir', 'Staff'];
+    }
+    return [];
+  };
+
+  const canManage = (targetRole: string) => {
+    if (currentUser?.role === 'Owner') return true;
+    if (currentUser?.role === 'Manager' && targetRole !== 'Owner') return true;
+    return false;
+  };
+
+  const filteredProfiles = profiles.filter(p => {
+    const matchesName = p.full_name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRole = roleFilter === 'All' || p.role === roleFilter;
+    return matchesName && matchesRole;
+  });
+
   return (
     <Layout>
-      <div className="mb-8 flex justify-between items-end">
+      <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
           <h2 className="font-display-lg text-display-lg text-primary">Manajemen Staf</h2>
           <p className="font-body-md text-body-md text-on-surface-variant mt-1">
@@ -124,9 +164,12 @@ const UsersPage: React.FC = () => {
             onClick={() => setIsAddModalOpen(true)}
             className="bg-primary text-white px-6 py-3 rounded-full font-bold shadow-lg hover:bg-primary/90 transition-all flex items-center gap-2"
           >
-            <span className="material-symbols-outlined">person_add</span>
-            Tambah Staf
-          </button>
+            <option value="All">Semua Jabatan</option>
+            <option value="Owner">Owner</option>
+            <option value="Manager">Manager</option>
+            <option value="Kasir">Kasir</option>
+            <option value="Staff">Staff</option>
+          </select>
         </div>
       </div>
 
@@ -137,18 +180,17 @@ const UsersPage: React.FC = () => {
               <tr>
                 <th className="px-8 py-4 font-label-uppercase text-secondary text-[11px] tracking-widest">STAF</th>
                 <th className="px-8 py-4 font-label-uppercase text-secondary text-[11px] tracking-widest">JABATAN (ROLE)</th>
-                <th className="px-8 py-4 font-label-uppercase text-secondary text-[11px] tracking-widest">TERAKHIR AKTIF</th>
                 <th className="px-8 py-4 font-label-uppercase text-secondary text-[11px] tracking-widest text-right">AKSI</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant">
               {loading ? (
                 <tr>
-                  <td colSpan={4} className="px-8 py-20 text-center">
+                  <td colSpan={3} className="px-8 py-20 text-center">
                     <span className="material-symbols-outlined animate-spin text-primary text-4xl">progress_activity</span>
                   </td>
                 </tr>
-              ) : profiles.map((profile) => (
+              ) : filteredProfiles.map((profile) => (
                 <tr key={profile.id} className="hover:bg-primary/[0.02] transition-colors group">
                   <td className="px-8 py-5">
                     <div className="flex items-center gap-4">
@@ -159,7 +201,8 @@ const UsersPage: React.FC = () => {
                       />
                       <div>
                         <p className="font-title-md text-on-surface leading-none mb-1">{profile.full_name || 'Tanpa Nama'}</p>
-                        <p className="text-[11px] text-outline font-medium tracking-wide uppercase">ID: {profile.id.slice(0, 8)}...</p>
+                        <p className="text-[12px] text-primary font-medium mb-1">{profile.email || '-'}</p>
+                        <p className="text-[11px] text-outline font-medium tracking-wide">ID: {profile.id.slice(0, 8)}</p>
                       </div>
                     </div>
                   </td>
@@ -172,27 +215,37 @@ const UsersPage: React.FC = () => {
                       {profile.role || 'Staff'}
                     </span>
                   </td>
-                  <td className="px-8 py-5">
-                    <p className="font-body-sm text-on-surface-variant">
-                      {profile.updated_at ? new Date(profile.updated_at).toLocaleDateString('id-ID', {
-                        day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
-                      }) : '-'}
-                    </p>
-                  </td>
                   <td className="px-8 py-5 text-right">
-                    <button 
-                      onClick={() => deleteUser(profile.id, profile.full_name)}
-                      className="p-2 text-outline hover:text-error hover:bg-error/10 rounded-full transition-all"
-                    >
-                      <span className="material-symbols-outlined">delete_forever</span>
-                    </button>
+                    <div className="flex justify-end gap-2">
+                      {canManage(profile.role) && profile.id !== currentUser?.id && (
+                        <>
+                          <button 
+                            onClick={() => {
+                              setEditingProfile(profile);
+                              setIsEditModalOpen(true);
+                            }}
+                            className="p-2 text-outline hover:text-primary hover:bg-primary/10 rounded-full transition-all"
+                            title="Edit Jabatan"
+                          >
+                            <span className="material-symbols-outlined text-[20px]">edit</span>
+                          </button>
+                          <button 
+                            onClick={() => deleteUser(profile.id, profile.full_name)}
+                            className="p-2 text-outline hover:text-error hover:bg-error/10 rounded-full transition-all"
+                            title="Hapus User"
+                          >
+                            <span className="material-symbols-outlined text-[20px]">delete_forever</span>
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
-              {!loading && profiles.length === 0 && (
+              {!loading && filteredProfiles.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-8 py-20 text-center text-secondary italic">
-                    Belum ada data staf yang terdaftar.
+                  <td colSpan={3} className="px-8 py-20 text-center text-secondary italic">
+                    Tidak ada staf yang sesuai dengan filter.
                   </td>
                 </tr>
               )}
@@ -201,14 +254,38 @@ const UsersPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="mt-8 bg-primary/5 border border-primary/10 rounded-2xl p-6 flex gap-4 items-center">
-        <span className="material-symbols-outlined text-primary text-[32px]">info</span>
-        <div>
-          <h4 className="font-title-md text-primary mb-1">Pusat Keamanan Staf</h4>
-          <p className="font-body-sm text-secondary leading-relaxed">
-            Halaman ini menampilkan profil publik staf Anda. Untuk menambah atau mengubah hak akses login (Email/Password), 
-            silakan gunakan menu <b>Authentication</b> pada Dashboard Supabase Anda.
-          </p>
+      {/* Add Staff Modal */}
+      {isAddModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-surface-container-lowest w-full max-w-md rounded-[32px] shadow-2xl p-8">
+            <h3 className="font-headline-sm text-on-surface mb-6">Tambah Staf Baru</h3>
+            <form onSubmit={handleAddStaff} className="space-y-5">
+              <div className="flex flex-col gap-1.5">
+                <label className="font-label-uppercase text-secondary text-[11px] uppercase tracking-wider">Nama Lengkap</label>
+                <input type="text" required value={newStaff.full_name} onChange={(e) => setNewStaff({...newStaff, full_name: e.target.value})} className="w-full h-12 px-4 rounded-xl border border-outline-variant bg-surface outline-none focus:border-primary" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="font-label-uppercase text-secondary text-[11px] uppercase tracking-wider">Email</label>
+                <input type="email" required value={newStaff.email} onChange={(e) => setNewStaff({...newStaff, email: e.target.value})} className="w-full h-12 px-4 rounded-xl border border-outline-variant bg-surface outline-none focus:border-primary" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="font-label-uppercase text-secondary text-[11px] uppercase tracking-wider">Password</label>
+                <input type="password" required value={newStaff.password} onChange={(e) => setNewStaff({...newStaff, password: e.target.value})} className="w-full h-12 px-4 rounded-xl border border-outline-variant bg-surface outline-none focus:border-primary" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="font-label-uppercase text-secondary text-[11px] uppercase tracking-wider">Jabatan / Role</label>
+                <select value={newStaff.role} onChange={(e) => setNewStaff({...newStaff, role: e.target.value})} className="w-full h-12 px-4 rounded-xl border border-outline-variant bg-surface outline-none focus:border-primary cursor-pointer">
+                  {getAvailableRoles().map(r => <option key={r} value={r}>{r}</option>)}
+                </select>
+              </div>
+              <div className="flex gap-3 pt-4">
+                <button type="button" onClick={() => setIsAddModalOpen(false)} className="flex-1 py-3.5 border border-outline-variant rounded-full font-bold">Batal</button>
+                <button type="submit" disabled={isSubmitting} className="flex-1 py-3.5 bg-primary text-white rounded-full font-bold shadow-lg hover:bg-primary/90 flex items-center justify-center gap-2">
+                  {isSubmitting ? <span className="material-symbols-outlined animate-spin">progress_activity</span> : 'Daftarkan'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
 
