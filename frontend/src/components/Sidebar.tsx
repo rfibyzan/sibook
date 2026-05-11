@@ -8,13 +8,13 @@ const Sidebar: React.FC = () => {
 
   const menuItems = [
     { name: 'Dashboard', path: '/dashboard', icon: 'dashboard', roles: ['Owner', 'Manager', 'Staff', 'Kasir'] },
-    { name: 'Manajemen Buku', path: '/books', icon: 'menu_book', roles: ['Owner', 'Manager', 'Staff', 'Kasir'] },
-    { name: 'Stok Masuk', path: '/stock-in', icon: 'login', roles: ['Owner', 'Manager', 'Staff', 'Kasir'] },
-    { name: 'Stok Keluar', path: '/stock-out', icon: 'logout', roles: ['Owner', 'Manager', 'Staff', 'Kasir'] },
+    { name: 'Manajemen Buku', path: '/books', icon: 'menu_book', roles: ['Owner', 'Manager'] },
+    { name: 'Stok Masuk', path: '/stock-in', icon: 'login', roles: ['Owner', 'Manager', 'Staff'] },
+    { name: 'Stok Keluar', path: '/stock-out', icon: 'logout', roles: ['Owner', 'Manager', 'Kasir'] },
     { name: 'Kategori Buku', path: '/categories', icon: 'category', roles: ['Owner', 'Manager'] },
-    { name: 'Lokasi Rak', path: '/locations', icon: 'grid_view', roles: ['Owner', 'Manager'] },
+    { name: 'Lokasi Rak', path: '/locations', icon: 'grid_view', roles: ['Owner', 'Manager', 'Staff'] },
     { name: 'Laporan', path: '/reports', icon: 'assessment', roles: ['Owner', 'Manager'] },
-    { name: 'Manajemen Pengguna', path: '/users', icon: 'group', roles: ['Owner'] },
+    { name: 'Manajemen Staf', path: '/users', icon: 'group', roles: ['Owner', 'Manager'] },
     { name: 'Pengaturan', path: '/settings', icon: 'settings', roles: ['Owner', 'Manager', 'Staff', 'Kasir'] },
   ];
 
