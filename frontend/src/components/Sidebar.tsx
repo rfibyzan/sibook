@@ -28,7 +28,7 @@ const Sidebar: React.FC = () => {
         <span className="material-symbols-outlined text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>menu_book</span>
         <div>
           <h1 className="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed">SIBOOK Admin</h1>
-          <p className="font-body-sm text-body-sm text-secondary">Inventory Specialist</p>
+          <p className="font-body-sm text-body-sm text-secondary">System Inventory Book</p>
         </div>
       </div>
       <ul className="flex-1 px-4 space-y-1">
