@@ -145,66 +145,67 @@ const StockOutPage: React.FC = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
-        <div className="lg:col-span-2 space-y-gutter">
-          {/* Search Section */}
-          <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 shadow-sm">
-            <h3 className="font-title-sm text-on-surface mb-4">Cari & Tambah Buku</h3>
-            <div className="relative">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
-              <input 
-                className="w-full pl-10 pr-4 py-3 bg-surface border border-outline-variant rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
-                placeholder="Ketik Judul Buku atau ISBN..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              
-              {searchTerm && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-surface-container-lowest border border-outline-variant rounded-xl shadow-xl z-10 overflow-hidden">
-                  {filteredBooks.length > 0 ? filteredBooks.map(book => (
-                    <button 
-                      key={book.id}
-                      onClick={() => addToCart(book)}
-                      className="w-full p-4 text-left hover:bg-primary/5 border-b border-outline-variant last:border-0 flex justify-between items-center"
-                    >
-                      <div>
-                        <p className="font-bold text-on-surface">{book.title}</p>
-                        <p className="text-xs text-secondary">{book.isbn} • Stok: {book.stock}</p>
-                      </div>
-                      <p className="font-data-tabular text-primary font-bold">Rp {book.price.toLocaleString()}</p>
-                    </button>
-                  )) : (
-                    <p className="p-4 text-center text-secondary">Buku tidak ditemukan atau stok habis.</p>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <div className="lg:col-span-3 space-y-6">
+          <div className="bg-surface-container-lowest border border-outline-variant rounded-[32px] shadow-sm overflow-hidden flex flex-col min-h-[600px]">
+            {/* Search Header Area */}
+            <div className="p-8 border-b border-outline-variant bg-surface-container-low/30">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <h3 className="font-title-md text-on-surface">Keranjang Belanja</h3>
+                <div className="relative flex-1 max-w-md">
+                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline text-[20px]">search</span>
+                  <input 
+                    className="w-full pl-12 pr-4 h-12 bg-surface border border-outline-variant rounded-full focus:ring-2 focus:ring-primary/20 outline-none transition-all text-sm"
+                    placeholder="Cari & Tambah Buku..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                  
+                  {searchTerm && (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-xl z-20 overflow-hidden">
+                      {filteredBooks.length > 0 ? filteredBooks.map(book => (
+                        <button 
+                          key={book.id}
+                          onClick={() => addToCart(book)}
+                          className="w-full p-4 text-left hover:bg-primary/5 border-b border-outline-variant last:border-0 flex justify-between items-center transition-colors"
+                        >
+                          <div>
+                            <p className="font-bold text-on-surface text-sm">{book.title}</p>
+                            <p className="text-[11px] text-secondary">{book.isbn} • Stok: {book.stock}</p>
+                          </div>
+                          <p className="font-data-tabular text-primary font-bold text-sm">Rp {book.price.toLocaleString()}</p>
+                        </button>
+                      )) : (
+                        <div className="p-4 text-center text-secondary text-sm italic">Buku tidak ditemukan</div>
+                      )}
+                    </div>
                   )}
                 </div>
-              )}
+              </div>
             </div>
-          </div>
 
-          {/* Cart Section */}
-          <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 shadow-sm min-h-[300px]">
-            <h3 className="font-title-sm text-on-surface mb-6">Keranjang Belanja</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-surface-container-low border-b border-outline-variant text-left">
+            {/* Cart Table Area */}
+            <div className="flex-1 overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead className="bg-surface-container-low border-b border-outline-variant sticky top-0">
                   <tr>
-                    <th className="px-4 py-3 font-label-uppercase text-secondary text-[11px]">Item</th>
-                    <th className="px-4 py-3 font-label-uppercase text-secondary text-[11px] w-40 text-center">Jumlah</th>
-                    <th className="px-4 py-3 font-label-uppercase text-secondary text-[11px] text-right">Harga</th>
-                    <th className="px-4 py-3 font-label-uppercase text-secondary text-[11px] text-right">Subtotal</th>
-                    <th className="px-4 py-3 w-10"></th>
+                    <th className="px-8 py-4 font-label-uppercase text-secondary text-[11px] tracking-widest">Item</th>
+                    <th className="px-8 py-4 font-label-uppercase text-secondary text-[11px] tracking-widest w-40 text-center">Jumlah</th>
+                    <th className="px-8 py-4 font-label-uppercase text-secondary text-[11px] tracking-widest text-right">Harga</th>
+                    <th className="px-8 py-4 font-label-uppercase text-secondary text-[11px] tracking-widest text-right">Subtotal</th>
+                    <th className="px-8 py-4 w-10"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant">
                   {cart.map(item => {
                     const original = availableBooks.find(b => b.id === item.id);
                     return (
-                      <tr key={item.id} className="hover:bg-surface-container-low/30">
-                        <td className="px-4 py-4">
+                      <tr key={item.id} className="hover:bg-surface-container-low/20 transition-colors">
+                        <td className="px-8 py-6">
                           <p className="font-bold text-on-surface">{item.title}</p>
                           <p className="text-xs text-secondary">{item.isbn}</p>
                         </td>
-                        <td className="px-4 py-4">
+                        <td className="px-8 py-6">
                           <div className="flex items-center justify-center border border-outline-variant rounded-xl bg-surface-container-low max-w-[140px] mx-auto px-2">
                             <input 
                               type="text"
@@ -215,16 +216,25 @@ const StockOutPage: React.FC = () => {
                             <span className="text-[10px] text-secondary font-bold ml-1">PCS</span>
                           </div>
                         </td>
-                        <td className="px-4 py-4 text-right font-data-tabular text-on-surface">Rp {item.price.toLocaleString()}</td>
-                        <td className="px-4 py-4 text-right font-data-tabular text-on-surface font-bold">Rp {(item.quantity * item.price).toLocaleString()}</td>
-                        <td className="px-4 py-4 text-center">
-                          <button onClick={() => removeFromCart(item.id)} className="text-outline hover:text-error transition-colors"><span className="material-symbols-outlined">delete</span></button>
+                        <td className="px-8 py-6 text-right font-data-tabular text-on-surface">Rp {item.price.toLocaleString()}</td>
+                        <td className="px-8 py-6 text-right font-data-tabular text-on-surface font-bold">Rp {(item.quantity * item.price).toLocaleString()}</td>
+                        <td className="px-8 py-6 text-center">
+                          <button onClick={() => removeFromCart(item.id)} className="p-2 text-outline hover:bg-error/10 hover:text-error rounded-full transition-all">
+                            <span className="material-symbols-outlined text-[20px]">delete</span>
+                          </button>
                         </td>
                       </tr>
                     );
                   })}
                   {cart.length === 0 && (
-                    <tr><td colSpan={5} className="py-20 text-center text-secondary italic">Keranjang masih kosong...</td></tr>
+                    <tr>
+                      <td colSpan={5} className="py-32 text-center">
+                        <div className="flex flex-col items-center gap-2 text-secondary opacity-50">
+                          <span className="material-symbols-outlined text-5xl">shopping_cart_checkout</span>
+                          <p className="text-sm italic">Keranjang masih kosong...</p>
+                        </div>
+                      </td>
+                    </tr>
                   )}
                 </tbody>
               </table>
@@ -232,22 +242,38 @@ const StockOutPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Payment Summary */}
-        <div className="space-y-gutter">
-          <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 shadow-sm sticky top-24">
-            <h3 className="font-title-sm text-on-surface mb-6 border-b border-outline-variant pb-4">Ringkasan Pembayaran</h3>
+        {/* Payment Summary Sidebar */}
+        <div className="lg:col-span-1">
+          <div className="bg-surface-container-lowest border border-outline-variant rounded-[32px] p-8 shadow-sm sticky top-24">
+            <h3 className="font-title-sm text-on-surface mb-6 flex items-center gap-2 border-b border-outline-variant pb-4">
+              <span className="material-symbols-outlined text-primary">receipt_long</span>
+              Ringkasan Pembayaran
+            </h3>
             <div className="space-y-4 mb-8">
-              <div className="flex justify-between text-body-md"><span className="text-secondary">Subtotal</span><span className="text-on-surface font-medium">Rp {subtotal.toLocaleString()}</span></div>
-              <div className="flex justify-between text-body-md"><span className="text-secondary">PPN (11%)</span><span className="text-on-surface font-medium">Rp {tax.toLocaleString()}</span></div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-secondary">Subtotal</span>
+                <span className="text-on-surface font-medium">Rp {subtotal.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-secondary">PPN (11%)</span>
+                <span className="text-on-surface font-medium">Rp {tax.toLocaleString()}</span>
+              </div>
               <div className="h-px bg-outline-variant my-4"></div>
-              <div className="flex justify-between items-center"><span className="font-bold text-on-surface">TOTAL</span><span className="font-headline-md text-primary font-bold">Rp {total.toLocaleString()}</span></div>
+              <div className="bg-primary/5 p-4 rounded-2xl">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-[11px] font-label-uppercase text-primary tracking-widest font-bold">TOTAL BAYAR</span>
+                </div>
+                <div className="text-2xl font-bold text-primary tracking-tight">
+                  Rp {total.toLocaleString()}
+                </div>
+              </div>
             </div>
             <button 
               disabled={cart.length === 0 || isLoading}
               onClick={handleCheckout}
-              className="w-full bg-primary text-white py-4 rounded-full font-bold shadow-lg hover:bg-primary/90 active:scale-95 transition-all disabled:opacity-50 flex justify-center items-center gap-2"
+              className="w-full bg-primary text-white py-4 rounded-full font-bold shadow-lg hover:shadow-primary/20 transition-all disabled:opacity-50 flex justify-center items-center gap-2 active:scale-[0.98]"
             >
-              <span className="material-symbols-outlined">payments</span>
+              <span className="material-symbols-outlined text-[20px]">payments</span>
               {isLoading ? 'Memproses...' : 'Selesaikan Transaksi'}
             </button>
           </div>
