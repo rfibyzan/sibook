@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
 import { useNotification } from '../context/NotificationContext';
+import { useAuth } from '../context/AuthContext';
 import { createClient } from '@supabase/supabase-js';
 
 interface UserProfile {
@@ -25,7 +26,16 @@ const UsersPage: React.FC = () => {
   const { profile: currentUser } = useAuth();
   const [profiles, setProfiles] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Filter States
+  const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState('All');
+
+  // Modal States
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingProfile, setEditingProfile] = useState<UserProfile | null>(null);
+
   const [newStaff, setNewStaff] = useState({
     full_name: '',
     email: '',
@@ -63,14 +73,12 @@ const UsersPage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      // 1. Create a temporary client to avoid signing out the admin
       const tempSupabase = createClient(
         import.meta.env.VITE_SUPABASE_URL,
         import.meta.env.VITE_SUPABASE_ANON_KEY,
         { auth: { persistSession: false } }
       );
 
-      // 2. Sign up the new user
       const { data: signUpData, error: signUpError } = await tempSupabase.auth.signUp({
         email: newStaff.email,
         password: newStaff.password,
@@ -85,11 +93,9 @@ const UsersPage: React.FC = () => {
       if (signUpError) throw signUpError;
 
       if (signUpData.user) {
-        showAlert('Staf baru berhasil didaftarkan! Pastikan Anda telah menambahkan trigger di Supabase untuk sinkronisasi profil.', 'success');
+        showAlert('Staf baru berhasil didaftarkan!', 'success');
         setIsAddModalOpen(false);
         setNewStaff({ full_name: '', email: '', password: '', role: 'Staff' });
-        
-        // Tunggu sebentar agar trigger selesai memproses sebelum refresh
         setTimeout(() => fetchProfiles(), 1500);
       }
     } catch (error: any) {
@@ -99,27 +105,44 @@ const UsersPage: React.FC = () => {
     }
   };
 
+  const handleUpdateRole = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProfile) return;
+    setIsSubmitting(true);
+
+    const { error } = await (supabase
+      .from('profiles') as any)
+      .update({ role: editingProfile.role })
+      .eq('id', editingProfile.id);
+
+    if (!error) {
+      showAlert('Jabatan berhasil diperbarui.', 'success');
+      setIsEditModalOpen(false);
+      fetchProfiles();
+    } else {
+      showAlert('Gagal memperbarui jabatan: ' + error.message, 'error');
+    }
+    setIsSubmitting(false);
+  };
+
   const deleteUser = (id: string, name: string) => {
     showConfirm({
       title: 'Hapus Staf',
-      message: `Hapus "${name}"? Staf ini tidak akan bisa login lagi ke sistem SIBOOK.`,
+      message: `Hapus "${name}"? Staf ini tidak akan bisa login lagi.`,
       confirmText: 'Ya, Hapus Total',
       type: 'danger',
       onConfirm: async () => {
         setLoading(true);
-        // Tambahkan .select() untuk memverifikasi apakah baris benar-benar terhapus
-        const { data, error } = await supabase
-          .from('profiles')
+        const { data, error } = await (supabase
+          .from('profiles') as any)
           .delete()
           .eq('id', id)
           .select();
         
         if (error) {
           showAlert('Gagal menghapus: ' + error.message, 'error');
-        } else if (!data || data.length === 0) {
-          showAlert('Gagal menghapus: Anda tidak memiliki izin (RLS) atau user tidak ditemukan.', 'error');
         } else {
-          showAlert('User dan akses login berhasil dihapus.', 'success');
+          showAlert('User berhasil dihapus.', 'success');
           fetchProfiles();
         }
         setLoading(false);
@@ -145,7 +168,7 @@ const UsersPage: React.FC = () => {
   };
 
   const filteredProfiles = profiles.filter(p => {
-    const matchesName = p.full_name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesName = p.full_name?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = roleFilter === 'All' || p.role === roleFilter;
     return matchesName && matchesRole;
   });
@@ -159,10 +182,39 @@ const UsersPage: React.FC = () => {
             Lihat dan kelola anggota tim SIBOOK Anda.
           </p>
         </div>
-        <div className="flex gap-3">
-          <button 
-            onClick={() => setIsAddModalOpen(true)}
-            className="bg-primary text-white px-6 py-3 rounded-full font-bold shadow-lg hover:bg-primary/90 transition-all flex items-center gap-2"
+        <div className="flex gap-3 w-full md:w-auto">
+          {(currentUser?.role === 'Owner' || currentUser?.role === 'Manager') && (
+            <button 
+              onClick={() => {
+                setNewStaff({ ...newStaff, role: getAvailableRoles()[0] || 'Staff' });
+                setIsAddModalOpen(true);
+              }}
+              className="bg-primary text-white px-6 py-3 rounded-full font-bold shadow-lg hover:bg-primary/90 transition-all flex items-center gap-2 whitespace-nowrap"
+            >
+              <span className="material-symbols-outlined">person_add</span>
+              Tambah Staf
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <div className="flex-1 relative">
+          <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-secondary">search</span>
+          <input 
+            type="text" 
+            placeholder="Cari nama staf..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full h-12 pl-12 pr-4 rounded-2xl border border-outline-variant bg-surface-container-lowest focus:border-primary outline-none transition-all"
+          />
+        </div>
+        <div className="w-full md:w-64">
+          <select 
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
+            className="w-full h-12 px-4 rounded-2xl border border-outline-variant bg-surface-container-lowest focus:border-primary outline-none cursor-pointer"
           >
             <option value="All">Semua Jabatan</option>
             <option value="Owner">Owner</option>
@@ -287,82 +339,29 @@ const UsersPage: React.FC = () => {
             </form>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Add Staff Modal */}
-      {isAddModalOpen && (
+      {/* Edit Role Modal */}
+      {isEditModalOpen && editingProfile && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-surface-container-lowest w-full max-w-md rounded-[32px] shadow-2xl p-8 animate-in zoom-in-95 duration-200">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="font-headline-sm text-on-surface">Tambah Staf Baru</h3>
-              <button 
-                onClick={() => setIsAddModalOpen(false)}
-                className="p-2 hover:bg-surface-container rounded-full text-secondary"
-              >
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
-
-            <form onSubmit={handleAddStaff} className="space-y-5">
+          <div className="bg-surface-container-lowest w-full max-w-md rounded-[32px] shadow-2xl p-8">
+            <h3 className="font-headline-sm text-on-surface mb-2">Ubah Jabatan</h3>
+            <p className="text-secondary text-body-md mb-6">Mengubah jabatan untuk <b>{editingProfile.full_name}</b></p>
+            <form onSubmit={handleUpdateRole} className="space-y-5">
               <div className="flex flex-col gap-1.5">
-                <label className="font-label-uppercase text-secondary text-[11px] uppercase tracking-wider">Nama Lengkap</label>
-                <input 
-                  type="text" required placeholder="Contoh: Budi Santoso"
-                  value={newStaff.full_name}
-                  onChange={(e) => setNewStaff({...newStaff, full_name: e.target.value})}
-                  className="w-full h-12 px-4 rounded-xl border border-outline-variant bg-surface focus:border-primary outline-none"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="font-label-uppercase text-secondary text-[11px] uppercase tracking-wider">Email Work</label>
-                <input 
-                  type="email" required placeholder="email@sibook.com"
-                  value={newStaff.email}
-                  onChange={(e) => setNewStaff({...newStaff, email: e.target.value})}
-                  className="w-full h-12 px-4 rounded-xl border border-outline-variant bg-surface focus:border-primary outline-none"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="font-label-uppercase text-secondary text-[11px] uppercase tracking-wider">Password Sementara</label>
-                <input 
-                  type="password" required minLength={6} placeholder="Min. 6 karakter"
-                  value={newStaff.password}
-                  onChange={(e) => setNewStaff({...newStaff, password: e.target.value})}
-                  className="w-full h-12 px-4 rounded-xl border border-outline-variant bg-surface focus:border-primary outline-none"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="font-label-uppercase text-secondary text-[11px] uppercase tracking-wider">Jabatan / Role</label>
+                <label className="font-label-uppercase text-secondary text-[11px] uppercase tracking-wider">Pilih Jabatan Baru</label>
                 <select 
-                  value={newStaff.role}
-                  onChange={(e) => setNewStaff({...newStaff, role: e.target.value})}
-                  className="w-full h-12 px-4 rounded-xl border border-outline-variant bg-surface focus:border-primary outline-none cursor-pointer"
+                  value={editingProfile.role} 
+                  onChange={(e) => setEditingProfile({...editingProfile, role: e.target.value})} 
+                  className="w-full h-12 px-4 rounded-xl border border-outline-variant bg-surface outline-none focus:border-primary cursor-pointer"
                 >
-                  <option value="Staff">Staff</option>
-                  <option value="Kasir">Kasir</option>
-                  <option value="Manager">Manager</option>
-                  <option value="Owner">Owner</option>
+                  {getAvailableRoles().map(r => <option key={r} value={r}>{r}</option>)}
                 </select>
               </div>
-
               <div className="flex gap-3 pt-4">
-                <button 
-                  type="button" 
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="flex-1 py-3.5 border border-outline-variant rounded-full font-bold text-on-surface hover:bg-surface-container transition-all"
-                >
-                  Batal
-                </button>
-                <button 
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="flex-1 py-3.5 bg-primary text-white rounded-full font-bold shadow-lg hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2 transition-all"
-                >
-                  {isSubmitting ? <span className="material-symbols-outlined animate-spin">progress_activity</span> : <span className="material-symbols-outlined">how_to_reg</span>}
-                  Daftarkan
+                <button type="button" onClick={() => setIsEditModalOpen(false)} className="flex-1 py-3.5 border border-outline-variant rounded-full font-bold">Batal</button>
+                <button type="submit" disabled={isSubmitting} className="flex-1 py-3.5 bg-primary text-white rounded-full font-bold shadow-lg hover:bg-primary/90 flex items-center justify-center gap-2">
+                  {isSubmitting ? <span className="material-symbols-outlined animate-spin">progress_activity</span> : 'Simpan Perubahan'}
                 </button>
               </div>
             </form>
