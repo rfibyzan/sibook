@@ -42,8 +42,16 @@ const StockInPage: React.FC = () => {
     setSearchTerm('');
   };
 
+  const formatNumber = (num: number | string) => {
+    const value = num.toString().replace(/\D/g, '');
+    return value.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  };
+
+  const parseNumber = (str: string) => {
+    return Math.max(1, parseInt(str.replace(/\./g, '')) || 0);
+  };
+
   const updateQuantity = (id: string, newQty: number) => {
-    if (newQty < 1) return;
     setCart(cart.map(item => item.id === id ? { ...item, quantity: newQty } : item));
   };
 
@@ -153,8 +161,8 @@ const StockInPage: React.FC = () => {
                 <thead className="bg-surface-container-low border-b border-outline-variant">
                   <tr>
                     <th className="px-4 py-3 font-label-uppercase text-secondary text-[11px]">Buku</th>
-                    <th className="px-4 py-3 font-label-uppercase text-secondary text-[11px] w-40 text-center">Jumlah Tambahan</th>
-                    <th className="px-4 py-3 w-16"></th>
+                    <th className="px-4 py-3 font-label-uppercase text-secondary text-[11px] w-48 text-center">Jumlah</th>
+                    <th className="px-4 py-3 w-16 text-right"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant">
@@ -165,10 +173,14 @@ const StockInPage: React.FC = () => {
                         <p className="text-xs text-secondary">{item.isbn}</p>
                       </td>
                       <td className="px-4 py-4">
-                        <div className="flex items-center justify-center border border-outline-variant rounded-lg overflow-hidden bg-surface max-w-[120px] mx-auto">
-                          <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="px-3 py-1 hover:bg-surface-container text-primary font-bold">-</button>
-                          <span className="w-10 text-center font-bold text-on-surface">{item.quantity}</span>
-                          <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="px-3 py-1 hover:bg-surface-container text-primary font-bold">+</button>
+                        <div className="flex items-center justify-center border border-outline-variant rounded-xl bg-surface-container-low max-w-[140px] mx-auto px-2">
+                          <input 
+                            type="text"
+                            className="w-full h-10 bg-transparent text-center font-bold text-on-surface outline-none"
+                            value={formatNumber(item.quantity)}
+                            onChange={(e) => updateQuantity(item.id, parseNumber(e.target.value))}
+                          />
+                          <span className="text-[10px] text-secondary font-bold ml-1">PCS</span>
                         </div>
                       </td>
                       <td className="px-4 py-4 text-center">
