@@ -91,7 +91,9 @@ const Header: React.FC = () => {
             <p className="font-title-sm text-[13px] text-on-surface group-hover:text-primary transition-colors leading-none mb-1 truncate max-w-[120px]">
               {displayName}
             </p>
-            <p className="text-[11px] text-secondary leading-none uppercase tracking-tighter">Lihat Profil</p>
+            <p className="text-[11px] text-secondary leading-none uppercase tracking-tighter">
+              {profile?.role || 'Staff / Kasir'}
+            </p>
           </div>
         </Link>
 
