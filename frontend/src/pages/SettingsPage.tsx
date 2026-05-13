@@ -168,7 +168,7 @@ const SettingsPage: React.FC = () => {
     <Layout>
       <div className="max-w-4xl">
         <div className="mb-8">
-          <h2 className="font-display-lg text-display-lg text-on-background">Pengaturan Profil</h2>
+          <h2 className="font-display-lg text-display-lg text-primary">Pengaturan Profil</h2>
           <p className="font-body-sm text-body-sm text-secondary mt-1">Kelola tampilan profil dan sesi Anda.</p>
         </div>
 
