@@ -14,82 +14,79 @@ const DashboardPage: React.FC = () => {
   });
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  const fetchDashboardData = async () => {
-    setLoading(true);
-    
-    // 1. Hitung Total Buku
-    const { count: booksCount } = await supabase
-      .from('books')
-      .select('*', { count: 'exact', head: true });
-
-    // 2. Hitung Low Stock (< 5 tapi > 0)
-    const { count: lowCount } = await supabase
-      .from('books')
-      .select('*', { count: 'exact', head: true })
-      .lt('stock', 5)
-      .gt('stock', 0);
-
-    // 3. Hitung Out of Stock (0)
-    const { count: outCount } = await supabase
-      .from('books')
-      .select('*', { count: 'exact', head: true })
-      .eq('stock', 0);
-
-    // 4. Hitung Transaksi Hari Ini
-    const today = new Date().toISOString().split('T')[0];
-    const { count: transCount } = await supabase
-      .from('transactions')
-      .select('*', { count: 'exact', head: true })
-      .gte('created_at', today);
-
-    setMetrics({
-      totalBooks: booksCount || 0,
-      lowStock: lowCount || 0,
-      outOfStock: outCount || 0,
-      totalTransactions: transCount || 0
-    });
-    
-    setLoading(false);
-  };
-
   const [salesData, setSalesData] = useState<any[]>([]);
 
   useEffect(() => {
-    fetchSalesChartData();
+    const loadAll = async () => {
+      setLoading(true);
+      // Jalankan semua fetch secara paralel untuk performa maksimal
+      await Promise.all([fetchDashboardData(), fetchSalesChartData()]);
+      setLoading(false);
+    };
+    loadAll();
   }, []);
+
+  const fetchDashboardData = async () => {
+    const today = new Date().toISOString().split('T')[0];
+
+    // Jalankan 4 query secara PARALEL, bukan sequential
+    const [booksRes, lowRes, outRes, transRes] = await Promise.all([
+      supabase.from('books').select('*', { count: 'exact', head: true }),
+      supabase.from('books').select('*', { count: 'exact', head: true }).lt('stock', 5).gt('stock', 0),
+      supabase.from('books').select('*', { count: 'exact', head: true }).eq('stock', 0),
+      supabase.from('transactions').select('*', { count: 'exact', head: true }).gte('created_at', today),
+    ]);
+
+    setMetrics({
+      totalBooks: booksRes.count || 0,
+      lowStock: lowRes.count || 0,
+      outOfStock: outRes.count || 0,
+      totalTransactions: transRes.count || 0,
+    });
+  };
 
   const fetchSalesChartData = async () => {
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    // Hitung tanggal 7 hari lalu
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 6);
+    const startStr = startDate.toISOString().split('T')[0] + 'T00:00:00';
+
+    // SATU query untuk semua 7 hari, ambil created_at saja
+    const { data } = await supabase
+      .from('transactions')
+      .select('created_at')
+      .eq('type', 'out')
+      .gte('created_at', startStr);
+
+    // Kelompokkan transaksi berdasarkan tanggal di client-side
+    const countsByDate: Record<string, number> = {};
+    (data || []).forEach((row: { created_at: string }) => {
+      const dateKey = row.created_at.split('T')[0];
+      countsByDate[dateKey] = (countsByDate[dateKey] || 0) + 1;
+    });
+
+    // Bangun array 7 hari terakhir
     const last7Days = [];
-    
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
       const dateStr = d.toISOString().split('T')[0];
       const dayName = days[d.getDay()];
-      
-      const { count } = await supabase
-        .from('transactions')
-        .select('*', { count: 'exact', head: true })
-        .eq('type', 'out')
-        .gte('created_at', dateStr + 'T00:00:00')
-        .lte('created_at', dateStr + 'T23:59:59');
-        
+      const count = countsByDate[dateStr] || 0;
+
       last7Days.push({
         day: dayName,
-        val: count || 0,
-        height: `${Math.min((count || 0) * 10, 100)}%`, // Simulasi tinggi bar
-        highlight: i === 0 // Highlight hari ini
+        val: count,
+        height: `${Math.min(count * 10, 100)}%`,
+        highlight: i === 0,
       });
     }
     setSalesData(last7Days);
   };
 
-  if (loading || salesData.length === 0) {
+  if (loading) {
     return (
       <Layout>
         <div className="min-h-[400px] flex items-center justify-center">
