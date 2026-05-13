@@ -68,8 +68,8 @@ npm install
 
 Buat file `.env` di folder `frontend/` dan isi dengan kredensial Supabase Anda:
 ```env
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_SUPABASE_URL=https://nqrsmaoquiczigluytwe.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5xcnNtYW9xdWljemlnbHV5dHdlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1MDM5NDMsImV4cCI6MjA5NDA3OTk0M30.6sbAr9btd2IVzOfMohRpuBo_I_vUYCYZlNWY-e6XhI4
 ```
 
 Jalankan aplikasi:
