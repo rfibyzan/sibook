@@ -105,7 +105,7 @@ const DashboardPage: React.FC = () => {
   return (
     <Layout>
       <div className="mb-stack-loose">
-        <h2 className="font-display-lg text-display-lg text-on-background">Dashboard</h2>
+        <h2 className="font-display-lg text-display-lg text-primary">Dashboard</h2>
         <p className="font-body-sm text-body-sm text-secondary mt-1">
           Selamat datang kembali! Berikut ringkasan inventaris Anda hari ini.
         </p>
