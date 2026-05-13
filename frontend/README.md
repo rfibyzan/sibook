@@ -1,75 +1,33 @@
-# React + TypeScript + Vite
+# SIBOOK Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Aplikasi frontend untuk Sistem Inventory Bookstore (SIBOOK) dibangun menggunakan React, TypeScript, dan Vite.
 
-Currently, two official plugins are available:
+## 🚀 Fitur Frontend
+-   **Dashboard**: Ringkasan data dengan grafik analitik.
+-   **Inventory Management**: Manajemen buku, stok masuk, dan stok keluar.
+-   **Role-Based UI**: Antarmuka yang menyesuaikan berdasarkan role user (Owner, Manager, Staff).
+-   **Notification System**: Notifikasi global untuk feedback aksi pengguna.
+-   **Responsive Design**: Dioptimalkan untuk berbagai ukuran layar dengan Tailwind CSS.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🛠️ Pengembangan
 
-## React Compiler
-
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
-
-Note: This will impact Vite dev & build performances.
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Instalasi Dependensi
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Menjalankan Mode Development
+```bash
+npm run dev
 ```
+
+### Build untuk Produksi
+```bash
+npm run build
+```
+
+## 🌐 Deployment
+Aplikasi ini dikonfigurasi untuk dideploy di **Vercel**. Pastikan Environment Variables `VITE_SUPABASE_URL` dan `VITE_SUPABASE_ANON_KEY` sudah diatur di platform deployment.
+
+---
+Lihat [README utama](../README.md) untuk dokumentasi lengkap sistem.
