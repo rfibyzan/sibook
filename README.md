@@ -17,6 +17,17 @@ SIBOOK adalah sistem manajemen inventaris modern yang dirancang khusus untuk tok
 -   **🌓 Dark Mode & UI Modern**: Antarmuka yang bersih, responsif, dan mendukung mode gelap.
 -   **⚡ Real-time Updates**: Integrasi Supabase untuk sinkronisasi data instan.
 
+## Akun
+```bash
+Email:
+owner@sibook.com
+manager@sibook.com
+staff@sibook.com
+kasir@sibook.com
+
+Password:
+sibook
+```
 ## 🛠️ Tech Stack
 
 ### Frontend
