@@ -9,11 +9,7 @@ const Header: React.FC = () => {
   const { showConfirm } = useNotification();
   const navigate = useNavigate();
 
-  const notifications = [
-    { id: 1, title: 'Stok Kritis!', message: '"The Midnight Library" sisa 2 item.', time: '5 menit lalu', type: 'error' },
-    { id: 2, title: 'Stok Masuk Baru', message: '50 item "Laut Bercerita" telah diterima.', time: '1 jam lalu', type: 'success' },
-    { id: 3, title: 'Batas Minimum', message: '"Atomic Habits" mendekati batas minimum.', time: '3 jam lalu', type: 'warning' },
-  ];
+  const notifications: any[] = [];
 
   const handleSignOut = () => {
     showConfirm({
@@ -45,7 +41,9 @@ const Header: React.FC = () => {
             className="p-2 hover:bg-surface-container rounded-full text-on-surface-variant transition-colors relative"
           >
             <span className="material-symbols-outlined">notifications</span>
-            <span className="absolute top-2 right-2 w-2 h-2 bg-error rounded-full border border-surface"></span>
+            {notifications.length > 0 && (
+              <span className="absolute top-2 right-2 w-2 h-2 bg-error rounded-full border border-surface"></span>
+            )}
           </button>
 
           {isNotifOpen && (
@@ -55,20 +53,26 @@ const Header: React.FC = () => {
                 <button className="text-primary text-xs hover:underline">Tandai semua dibaca</button>
               </div>
               <div className="max-h-[400px] overflow-y-auto">
-                {notifications.map((notif) => (
-                  <div key={notif.id} className="p-4 border-b border-outline-variant last:border-0 hover:bg-surface-container-low transition-colors cursor-pointer">
-                    <div className="flex gap-3">
-                      <div className={`w-2 h-2 mt-2 rounded-full shrink-0 ${
-                        notif.type === 'error' ? 'bg-error' : notif.type === 'warning' ? 'bg-warning' : 'bg-primary'
-                      }`}></div>
-                      <div className="flex-1">
-                        <p className="font-title-sm text-[13px] text-on-surface mb-0.5">{notif.title}</p>
-                        <p className="font-body-sm text-[12px] text-secondary leading-tight">{notif.message}</p>
-                        <p className="text-[10px] text-outline mt-1">{notif.time}</p>
+                {notifications.length > 0 ? (
+                  notifications.map((notif) => (
+                    <div key={notif.id} className="p-4 border-b border-outline-variant last:border-0 hover:bg-surface-container-low transition-colors cursor-pointer">
+                      <div className="flex gap-3">
+                        <div className={`w-2 h-2 mt-2 rounded-full shrink-0 ${
+                          notif.type === 'error' ? 'bg-error' : notif.type === 'warning' ? 'bg-warning' : 'bg-primary'
+                        }`}></div>
+                        <div className="flex-1">
+                          <p className="font-title-sm text-[13px] text-on-surface mb-0.5">{notif.title}</p>
+                          <p className="font-body-sm text-[12px] text-secondary leading-tight">{notif.message}</p>
+                          <p className="text-[10px] text-outline mt-1">{notif.time}</p>
+                        </div>
                       </div>
                     </div>
+                  ))
+                ) : (
+                  <div className="p-8 text-center text-secondary italic text-sm">
+                    Tidak ada notifikasi baru
                   </div>
-                ))}
+                )}
               </div>
             </div>
           )}

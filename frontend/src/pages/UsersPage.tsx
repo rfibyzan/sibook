@@ -231,7 +231,7 @@ const UsersPage: React.FC = () => {
             <thead className="bg-surface-container-low border-b border-outline-variant">
               <tr>
                 <th className="px-8 py-4 font-label-uppercase text-secondary text-[11px] tracking-widest">STAF</th>
-                <th className="px-8 py-4 font-label-uppercase text-secondary text-[11px] tracking-widest">JABATAN (ROLE)</th>
+                <th className="px-8 py-4 font-label-uppercase text-secondary text-[11px] tracking-widest">SEBAGAI</th>
                 <th className="px-8 py-4 font-label-uppercase text-secondary text-[11px] tracking-widest text-right">AKSI</th>
               </tr>
             </thead>

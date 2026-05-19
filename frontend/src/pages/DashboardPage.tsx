@@ -30,11 +30,12 @@ const DashboardPage: React.FC = () => {
     const today = new Date().toISOString().split('T')[0];
 
     // Jalankan 4 query secara PARALEL, bukan sequential
+    // Menggunakan tabel baru: buku, transaksi_keluar
     const [booksRes, lowRes, outRes, transRes] = await Promise.all([
-      supabase.from('books').select('*', { count: 'exact', head: true }),
-      supabase.from('books').select('*', { count: 'exact', head: true }).lt('stock', 5).gt('stock', 0),
-      supabase.from('books').select('*', { count: 'exact', head: true }).eq('stock', 0),
-      supabase.from('transactions').select('*', { count: 'exact', head: true }).gte('created_at', today),
+      supabase.from('buku').select('*', { count: 'exact', head: true }),
+      supabase.from('buku').select('*', { count: 'exact', head: true }).lte('stok_saat_ini', 5).gt('stok_saat_ini', 0),
+      supabase.from('buku').select('*', { count: 'exact', head: true }).eq('stok_saat_ini', 0),
+      supabase.from('transaksi_keluar').select('*', { count: 'exact', head: true }).gte('dibuat_pada', today),
     ]);
 
     setMetrics({
@@ -53,17 +54,16 @@ const DashboardPage: React.FC = () => {
     startDate.setDate(startDate.getDate() - 6);
     const startStr = startDate.toISOString().split('T')[0] + 'T00:00:00';
 
-    // SATU query untuk semua 7 hari, ambil created_at saja
+    // SATU query untuk semua 7 hari, ambil dibuat_pada saja
     const { data } = await supabase
-      .from('transactions')
-      .select('created_at')
-      .eq('type', 'out')
-      .gte('created_at', startStr);
+      .from('transaksi_keluar')
+      .select('dibuat_pada')
+      .gte('dibuat_pada', startStr);
 
     // Kelompokkan transaksi berdasarkan tanggal di client-side
     const countsByDate: Record<string, number> = {};
-    (data || []).forEach((row: { created_at: string }) => {
-      const dateKey = row.created_at.split('T')[0];
+    (data || []).forEach((row: { dibuat_pada: string }) => {
+      const dateKey = row.dibuat_pada.split('T')[0];
       countsByDate[dateKey] = (countsByDate[dateKey] || 0) + 1;
     });
 

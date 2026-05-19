@@ -1,157 +1,224 @@
 export interface Database {
   public: {
     Tables: {
-      categories: {
+      kategori: {
         Row: {
           id: string;
-          name: string;
-          description: string | null;
-          created_at: string;
+          nama_kategori: string;
+          deskripsi: string | null;
+          dibuat_pada: string;
         };
         Insert: {
           id?: string;
-          name: string;
-          description?: string | null;
-          created_at?: string;
+          nama_kategori: string;
+          deskripsi?: string | null;
+          dibuat_pada?: string;
         };
         Update: {
           id?: string;
-          name?: string;
-          description?: string | null;
+          nama_kategori?: string;
+          deskripsi?: string | null;
         };
       };
-      locations: {
+      supplier: {
         Row: {
           id: string;
-          rack_code: string;
-          section: string;
-          capacity: number;
-          created_at: string;
+          nama: string;
+          telepon: string | null;
+          alamat: string | null;
+          email: string | null;
+          dibuat_pada: string;
         };
         Insert: {
           id?: string;
-          rack_code: string;
-          section: string;
-          capacity?: number;
-          created_at?: string;
+          nama: string;
+          telepon?: string | null;
+          alamat?: string | null;
+          email?: string | null;
+          dibuat_pada?: string;
         };
         Update: {
           id?: string;
-          rack_code?: string;
-          section?: string;
-          capacity?: number;
+          nama?: string;
+          telepon?: string | null;
+          alamat?: string | null;
+          email?: string | null;
         };
       };
-      suppliers: {
+      rak: {
         Row: {
           id: string;
-          name: string;
-          contact: string | null;
-          address: string | null;
-          created_at: string;
+          kode_rak: string;
+          seksi: string;
+          kapasitas: number;
+          dibuat_pada: string;
         };
         Insert: {
           id?: string;
-          name: string;
-          contact?: string | null;
-          address?: string | null;
-          created_at?: string;
+          kode_rak: string;
+          seksi: string;
+          kapasitas?: number;
+          dibuat_pada?: string;
         };
         Update: {
           id?: string;
-          name?: string;
-          contact?: string | null;
-          address?: string | null;
+          kode_rak?: string;
+          seksi?: string;
+          kapasitas?: number;
         };
       };
-      books: {
+      buku: {
         Row: {
           id: string;
           isbn: string;
-          title: string;
-          author: string;
-          category_id: string | null;
-          location_id: string | null;
-          stock: number;
-          price: number;
-          created_at: string;
+          judul: string;
+          pengarang: string;
+          penerbit: string | null;
+          id_kategori: string | null;
+          id_rak: string | null;
+          id_supplier: string | null;
+          harga_jual: number;
+          stok_saat_ini: number;
+          stok_minimum: number;
+          dibuat_pada: string;
         };
         Insert: {
           id?: string;
           isbn: string;
-          title: string;
-          author: string;
-          category_id?: string | null;
-          location_id?: string | null;
-          stock?: number;
-          price?: number;
-          created_at?: string;
+          judul: string;
+          pengarang: string;
+          penerbit?: string | null;
+          id_kategori?: string | null;
+          id_rak?: string | null;
+          id_supplier?: string | null;
+          harga_jual?: number;
+          stok_saat_ini?: number;
+          stok_minimum?: number;
+          dibuat_pada?: string;
         };
         Update: {
           id?: string;
           isbn?: string;
-          title?: string;
-          author?: string;
-          category_id?: string | null;
-          location_id?: string | null;
-          stock?: number;
-          price?: number;
+          judul?: string;
+          pengarang?: string;
+          penerbit?: string | null;
+          id_kategori?: string | null;
+          id_rak?: string | null;
+          id_supplier?: string | null;
+          harga_jual?: number;
+          stok_saat_ini?: number;
+          stok_minimum?: number;
         };
       };
-      transactions: {
+      transaksi_masuk: {
         Row: {
           id: string;
-          type: 'in' | 'out';
-          supplier_id: string | null;
-          user_id: string | null;
-          invoice_number: string | null;
-          notes: string | null;
-          total_amount: number;
-          created_at: string;
+          id_supplier: string | null;
+          id_user: string | null;
+          tanggal_masuk: string;
+          no_po: string | null;
+          total_item: number;
+          catatan: string | null;
+          dibuat_pada: string;
         };
         Insert: {
           id?: string;
-          type: 'in' | 'out';
-          supplier_id?: string | null;
-          user_id?: string | null;
-          invoice_number?: string | null;
-          notes?: string | null;
-          total_amount?: number;
-          created_at?: string;
+          id_supplier?: string | null;
+          id_user?: string | null;
+          tanggal_masuk?: string;
+          no_po?: string | null;
+          total_item?: number;
+          catatan?: string | null;
+          dibuat_pada?: string;
         };
         Update: {
           id?: string;
-          type?: 'in' | 'out';
-          supplier_id?: string | null;
-          user_id?: string | null;
-          invoice_number?: string | null;
-          notes?: string | null;
-          total_amount?: number;
+          id_supplier?: string | null;
+          id_user?: string | null;
+          tanggal_masuk?: string;
+          no_po?: string | null;
+          total_item?: number;
+          catatan?: string | null;
         };
       };
-      transaction_items: {
+      transaksi_keluar: {
         Row: {
           id: string;
-          transaction_id: string;
-          book_id: string;
-          quantity: number;
-          unit_price: number;
-          created_at: string;
+          id_user: string | null;
+          tanggal_keluar: string;
+          total_item: number;
+          total_harga: number;
+          catatan: string | null;
+          dibuat_pada: string;
         };
         Insert: {
           id?: string;
-          transaction_id: string;
-          book_id: string;
-          quantity: number;
-          unit_price?: number;
-          created_at?: string;
+          id_user?: string | null;
+          tanggal_keluar?: string;
+          total_item?: number;
+          total_harga?: number;
+          catatan?: string | null;
+          dibuat_pada?: string;
         };
         Update: {
           id?: string;
-          transaction_id?: string;
-          book_id?: string;
-          quantity?: number;
-          unit_price?: number;
+          id_user?: string | null;
+          tanggal_keluar?: string;
+          total_item?: number;
+          total_harga?: number;
+          catatan?: string | null;
+        };
+      };
+      detail_masuk: {
+        Row: {
+          id: string;
+          id_transaksi_masuk: string;
+          id_buku: string;
+          jumlah_masuk: number;
+          harga_beli: number;
+          sub_total: number;
+          dibuat_pada: string;
+        };
+        Insert: {
+          id?: string;
+          id_transaksi_masuk: string;
+          id_buku: string;
+          jumlah_masuk: number;
+          harga_beli?: number;
+          dibuat_pada?: string;
+        };
+        Update: {
+          id?: string;
+          id_transaksi_masuk?: string;
+          id_buku?: string;
+          jumlah_masuk?: number;
+          harga_beli?: number;
+        };
+      };
+      detail_keluar: {
+        Row: {
+          id: string;
+          id_transaksi_keluar: string;
+          id_buku: string;
+          jumlah_keluar: number;
+          harga_jual: number;
+          sub_total: number;
+          dibuat_pada: string;
+        };
+        Insert: {
+          id?: string;
+          id_transaksi_keluar: string;
+          id_buku: string;
+          jumlah_keluar: number;
+          harga_jual?: number;
+          dibuat_pada?: string;
+        };
+        Update: {
+          id?: string;
+          id_transaksi_keluar?: string;
+          id_buku?: string;
+          jumlah_keluar?: number;
+          harga_jual?: number;
         };
       };
       profiles: {
@@ -181,10 +248,12 @@ export interface Database {
   };
 }
 
-export type Category = Database['public']['Tables']['categories']['Row'];
-export type Location = Database['public']['Tables']['locations']['Row'];
-export type Supplier = Database['public']['Tables']['suppliers']['Row'];
-export type Book = Database['public']['Tables']['books']['Row'];
-export type Transaction = Database['public']['Tables']['transactions']['Row'];
-export type TransactionItem = Database['public']['Tables']['transaction_items']['Row'];
+export type Kategori = Database['public']['Tables']['kategori']['Row'];
+export type Supplier = Database['public']['Tables']['supplier']['Row'];
+export type Rak = Database['public']['Tables']['rak']['Row'];
+export type Buku = Database['public']['Tables']['buku']['Row'];
+export type TransaksiMasuk = Database['public']['Tables']['transaksi_masuk']['Row'];
+export type TransaksiKeluar = Database['public']['Tables']['transaksi_keluar']['Row'];
+export type DetailMasuk = Database['public']['Tables']['detail_masuk']['Row'];
+export type DetailKeluar = Database['public']['Tables']['detail_keluar']['Row'];
 export type Profile = Database['public']['Tables']['profiles']['Row'];

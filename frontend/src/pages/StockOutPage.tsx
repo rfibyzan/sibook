@@ -3,24 +3,25 @@ import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
-import type { Book } from '../lib/types';
+import type { Buku } from '../lib/types';
 
 interface SaleItem {
   id: string; // book id
   isbn: string;
-  title: string;
+  judul: string;
   quantity: number;
-  price: number;
+  harga_jual: number;
 }
 
 const StockOutPage: React.FC = () => {
   const { user } = useAuth();
   const { showAlert } = useNotification();
-  const [availableBooks, setAvailableBooks] = useState<Book[]>([]);
+  const [availableBooks, setAvailableBooks] = useState<Buku[]>([]);
   const [cart, setCart] = useState<SaleItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [catatan, setCatatan] = useState('');
 
   useEffect(() => {
     fetchBooks();
@@ -28,23 +29,23 @@ const StockOutPage: React.FC = () => {
 
   const fetchBooks = async () => {
     const { data } = await supabase
-      .from('books')
+      .from('buku')
       .select('*')
-      .gt('stock', 0) // Hanya tampilkan yang ada stoknya
-      .order('title', { ascending: true });
-    if (data) setAvailableBooks(data);
+      .gt('stok_saat_ini', 0)
+      .order('judul', { ascending: true });
+    if (data) setAvailableBooks(data as Buku[]);
   };
 
-  const addToCart = (book: Book) => {
+  const addToCart = (book: Buku) => {
     const existing = cart.find(item => item.id === book.id);
     if (existing) {
-      if (existing.quantity >= book.stock) {
+      if (existing.quantity >= book.stok_saat_ini) {
         showAlert('Stok tidak mencukupi untuk item ini.', 'warning');
         return;
       }
       setCart(cart.map(item => item.id === book.id ? { ...item, quantity: item.quantity + 1 } : item));
     } else {
-      setCart([...cart, { id: book.id, isbn: book.isbn, title: book.title, quantity: 1, price: book.price }]);
+      setCart([...cart, { id: book.id, isbn: book.isbn, judul: book.judul, quantity: 1, harga_jual: book.harga_jual }]);
     }
     setSearchTerm('');
   };
@@ -71,7 +72,7 @@ const StockOutPage: React.FC = () => {
     setCart(cart.filter(item => item.id !== id));
   };
 
-  const subtotal = cart.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+  const subtotal = cart.reduce((sum, item) => sum + (item.quantity * item.harga_jual), 0);
   const tax = subtotal * 0.11;
   const total = subtotal + tax;
 
@@ -79,14 +80,14 @@ const StockOutPage: React.FC = () => {
     if (cart.length === 0) return;
     setIsLoading(true);
 
-    // 1. Simpan Header Transaksi
+    // 1. Simpan Header Transaksi Keluar
     const { data: transData, error: transError } = await (supabase
-      .from('transactions') as any)
+      .from('transaksi_keluar') as any)
       .insert({
-        type: 'out',
-        user_id: user?.id || null,
-        total_amount: total,
-        invoice_number: `TRS-${Date.now()}`
+        id_user: user?.id || null,
+        total_item: 0,
+        total_harga: 0,
+        catatan: catatan || null
       } as any)
       .select()
       .single();
@@ -99,14 +100,14 @@ const StockOutPage: React.FC = () => {
 
     // 2. Simpan Detail Items
     const itemsToInsert = cart.map(item => ({
-      transaction_id: (transData as any).id,
-      book_id: item.id,
-      quantity: item.quantity,
-      unit_price: item.price
+      id_transaksi_keluar: (transData as any).id,
+      id_buku: item.id,
+      jumlah_keluar: item.quantity,
+      harga_jual: item.harga_jual
     }));
 
     const { error: itemsError } = await (supabase
-      .from('transaction_items') as any)
+      .from('detail_keluar') as any)
       .insert(itemsToInsert as any);
 
     if (itemsError) {
@@ -114,16 +115,17 @@ const StockOutPage: React.FC = () => {
     } else {
       showAlert('Transaksi Berhasil! Stok database telah diperbarui.', 'success');
       setCart([]);
+      setCatatan('');
       setIsSuccess(true);
       setTimeout(() => setIsSuccess(false), 5000);
-      fetchBooks(); // Refresh stok
+      fetchBooks();
     }
     
     setIsLoading(false);
   };
 
   const filteredBooks = availableBooks.filter(b => 
-    b.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    b.judul.toLowerCase().includes(searchTerm.toLowerCase()) || 
     b.isbn.includes(searchTerm)
   ).slice(0, 5);
 
@@ -170,10 +172,10 @@ const StockOutPage: React.FC = () => {
                           className="w-full p-4 text-left hover:bg-primary/5 border-b border-outline-variant last:border-0 flex justify-between items-center transition-colors"
                         >
                           <div>
-                            <p className="font-bold text-on-surface text-sm">{book.title}</p>
-                            <p className="text-[11px] text-secondary">{book.isbn} • Stok: {book.stock}</p>
+                            <p className="font-bold text-on-surface text-sm">{book.judul}</p>
+                            <p className="text-[11px] text-secondary">{book.isbn} • Stok: {book.stok_saat_ini}</p>
                           </div>
-                          <p className="font-data-tabular text-primary font-bold text-sm">Rp {book.price.toLocaleString()}</p>
+                          <p className="font-data-tabular text-primary font-bold text-sm">Rp {book.harga_jual.toLocaleString()}</p>
                         </button>
                       )) : (
                         <div className="p-4 text-center text-secondary text-sm italic">Buku tidak ditemukan</div>
@@ -202,7 +204,7 @@ const StockOutPage: React.FC = () => {
                     return (
                       <tr key={item.id} className="hover:bg-surface-container-low/20 transition-colors">
                         <td className="px-8 py-6">
-                          <p className="font-bold text-on-surface">{item.title}</p>
+                          <p className="font-bold text-on-surface">{item.judul}</p>
                           <p className="text-xs text-secondary">{item.isbn}</p>
                         </td>
                         <td className="px-8 py-6">
@@ -211,13 +213,13 @@ const StockOutPage: React.FC = () => {
                               type="text"
                               className="w-full h-10 bg-transparent text-center font-bold text-on-surface outline-none"
                               value={formatNumber(item.quantity)}
-                              onChange={(e) => updateQuantity(item.id, parseNumber(e.target.value, original?.stock || 0))}
+                              onChange={(e) => updateQuantity(item.id, parseNumber(e.target.value, original?.stok_saat_ini || 0))}
                             />
                             <span className="text-[10px] text-secondary font-bold ml-1">PCS</span>
                           </div>
                         </td>
-                        <td className="px-8 py-6 text-right font-data-tabular text-on-surface">Rp {item.price.toLocaleString()}</td>
-                        <td className="px-8 py-6 text-right font-data-tabular text-on-surface font-bold">Rp {(item.quantity * item.price).toLocaleString()}</td>
+                        <td className="px-8 py-6 text-right font-data-tabular text-on-surface">Rp {item.harga_jual.toLocaleString()}</td>
+                        <td className="px-8 py-6 text-right font-data-tabular text-on-surface font-bold">Rp {(item.quantity * item.harga_jual).toLocaleString()}</td>
                         <td className="px-8 py-6 text-center">
                           <button onClick={() => removeFromCart(item.id)} className="p-2 text-outline hover:bg-error/10 hover:text-error rounded-full transition-all">
                             <span className="material-symbols-outlined text-[20px]">delete</span>
@@ -249,6 +251,19 @@ const StockOutPage: React.FC = () => {
               <span className="material-symbols-outlined text-primary">receipt_long</span>
               Ringkasan Pembayaran
             </h3>
+
+            {/* Catatan */}
+            <div className="flex flex-col gap-1.5 mb-6">
+              <label className="text-[10px] font-label-uppercase text-secondary tracking-wider uppercase">Catatan</label>
+              <textarea 
+                rows={2}
+                value={catatan}
+                onChange={(e) => setCatatan(e.target.value)}
+                className="w-full p-3 bg-surface border border-outline-variant rounded-xl text-sm outline-none focus:border-primary"
+                placeholder="Catatan tambahan..."
+              />
+            </div>
+
             <div className="space-y-4 mb-8">
               <div className="flex justify-between items-center text-sm">
                 <span className="text-secondary">Subtotal</span>

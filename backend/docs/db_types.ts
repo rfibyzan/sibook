@@ -70,6 +70,7 @@ export interface Database {
           isbn: string;
           title: string;
           author: string;
+          publisher: string | null;
           category_id: string | null;
           location_id: string | null;
           stock: number;
@@ -81,6 +82,7 @@ export interface Database {
           isbn: string;
           title: string;
           author: string;
+          publisher?: string | null;
           category_id?: string | null;
           location_id?: string | null;
           stock?: number;
@@ -92,6 +94,7 @@ export interface Database {
           isbn?: string;
           title?: string;
           author?: string;
+          publisher?: string | null;
           category_id?: string | null;
           location_id?: string | null;
           stock?: number;
