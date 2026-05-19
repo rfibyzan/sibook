@@ -12,6 +12,7 @@ const Sidebar: React.FC = () => {
     { name: 'Stok Masuk', path: '/stock-in', icon: 'login', roles: ['Owner', 'Manager', 'Staff'] },
     { name: 'Stok Keluar', path: '/stock-out', icon: 'logout', roles: ['Owner', 'Manager', 'Kasir'] },
     { name: 'Kategori Buku', path: '/categories', icon: 'category', roles: ['Owner', 'Manager'] },
+    { name: 'Supplier', path: '/suppliers', icon: 'local_shipping', roles: ['Owner', 'Manager'] },
     { name: 'Lokasi Rak', path: '/locations', icon: 'grid_view', roles: ['Owner', 'Manager', 'Staff'] },
     { name: 'Laporan', path: '/reports', icon: 'assessment', roles: ['Owner', 'Manager'] },
     { name: 'Manajemen Staf', path: '/users', icon: 'group', roles: ['Owner', 'Manager'] },

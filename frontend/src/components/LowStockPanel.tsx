@@ -1,21 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import type { Book } from '../lib/types';
+import type { Buku } from '../lib/types';
 
 const LowStockPanel: React.FC = () => {
-  const [lowStockBooks, setLowStockBooks] = useState<Book[]>([]);
+  const [lowStockBooks, setLowStockBooks] = useState<Buku[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchLowStock = async () => {
       const { data } = await supabase
-        .from('books')
+        .from('buku')
         .select('*')
-        .lt('stock', 10)
-        .order('stock', { ascending: true })
+        .lte('stok_saat_ini', 10)
+        .order('stok_saat_ini', { ascending: true })
         .limit(5);
 
-      if (data) setLowStockBooks(data);
+      if (data) setLowStockBooks(data as Buku[]);
       setLoading(false);
     };
 
@@ -36,13 +36,13 @@ const LowStockPanel: React.FC = () => {
           lowStockBooks.map((book) => (
             <div key={book.id} className="flex items-center gap-4 p-3 rounded-xl bg-surface-container-low/50 hover:bg-surface-container transition-colors cursor-pointer border border-transparent hover:border-outline-variant">
               <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
-                book.stock === 0 ? 'bg-error-container text-on-error-container' : 'bg-warning-container text-on-warning-container'
+                book.stok_saat_ini === 0 ? 'bg-error-container text-on-error-container' : 'bg-warning-container text-on-warning-container'
               }`}>
-                <span className="material-symbols-outlined">{book.stock === 0 ? 'error' : 'warning'}</span>
+                <span className="material-symbols-outlined">{book.stok_saat_ini === 0 ? 'error' : 'warning'}</span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-body-md text-body-md text-on-surface font-semibold truncate">{book.title}</p>
-                <p className="font-body-sm text-body-sm text-secondary">Tersisa {book.stock} item</p>
+                <p className="font-body-md text-body-md text-on-surface font-semibold truncate">{book.judul}</p>
+                <p className="font-body-sm text-body-sm text-secondary">Tersisa {book.stok_saat_ini} item (min: {book.stok_minimum})</p>
               </div>
               <span className="material-symbols-outlined text-outline text-[18px]">chevron_right</span>
             </div>

@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS categories (
 -- 2. Tabel Lokasi Rak
 CREATE TABLE IF NOT EXISTS locations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  rack_code TEXT NOT NULL,
+  rack_code TEXT UNIQUE NOT NULL,
   section TEXT NOT NULL,
   capacity INT DEFAULT 100,
   created_at TIMESTAMPTZ DEFAULT now()
@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS books (
   isbn TEXT UNIQUE NOT NULL,
   title TEXT NOT NULL,
   author TEXT NOT NULL,
+  publisher TEXT,
   category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
   location_id UUID REFERENCES locations(id) ON DELETE SET NULL,
   stock INT DEFAULT 0,
@@ -98,6 +99,38 @@ ALTER TABLE books ENABLE ROW LEVEL SECURITY;
 ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE transaction_items ENABLE ROW LEVEL SECURITY;
 
+-- Policy: Hapus jika sudah ada untuk menghindari error saat re-run
+DROP POLICY IF EXISTS "Allow authenticated read" ON categories;
+DROP POLICY IF EXISTS "Allow authenticated read" ON locations;
+DROP POLICY IF EXISTS "Allow authenticated read" ON suppliers;
+DROP POLICY IF EXISTS "Allow authenticated read" ON books;
+DROP POLICY IF EXISTS "Allow authenticated read" ON transactions;
+DROP POLICY IF EXISTS "Allow authenticated read" ON transaction_items;
+
+DROP POLICY IF EXISTS "Allow authenticated insert" ON categories;
+DROP POLICY IF EXISTS "Allow authenticated update" ON categories;
+DROP POLICY IF EXISTS "Allow authenticated delete" ON categories;
+
+DROP POLICY IF EXISTS "Allow authenticated insert" ON locations;
+DROP POLICY IF EXISTS "Allow authenticated update" ON locations;
+DROP POLICY IF EXISTS "Allow authenticated delete" ON locations;
+
+DROP POLICY IF EXISTS "Allow authenticated insert" ON suppliers;
+DROP POLICY IF EXISTS "Allow authenticated update" ON suppliers;
+DROP POLICY IF EXISTS "Allow authenticated delete" ON suppliers;
+
+DROP POLICY IF EXISTS "Allow authenticated insert" ON books;
+DROP POLICY IF EXISTS "Allow authenticated update" ON books;
+DROP POLICY IF EXISTS "Allow authenticated delete" ON books;
+
+DROP POLICY IF EXISTS "Allow authenticated insert" ON transactions;
+DROP POLICY IF EXISTS "Allow authenticated update" ON transactions;
+DROP POLICY IF EXISTS "Allow authenticated delete" ON transactions;
+
+DROP POLICY IF EXISTS "Allow authenticated insert" ON transaction_items;
+DROP POLICY IF EXISTS "Allow authenticated update" ON transaction_items;
+DROP POLICY IF EXISTS "Allow authenticated delete" ON transaction_items;
+
 -- Policy: Semua authenticated user bisa baca semua data
 CREATE POLICY "Allow authenticated read" ON categories FOR SELECT TO authenticated USING (true);
 CREATE POLICY "Allow authenticated read" ON locations FOR SELECT TO authenticated USING (true);
@@ -144,7 +177,7 @@ INSERT INTO categories (name, description) VALUES
 
 INSERT INTO locations (rack_code, section, capacity) VALUES
   ('A1', 'S1', 100),
-  ('A1', 'S2', 100),
+  ('A3', 'S2', 100),
   ('A2', 'S1', 120),
   ('B1', 'S1', 80),
   ('B2', 'S1', 150);
@@ -154,24 +187,24 @@ INSERT INTO suppliers (name, contact, address) VALUES
   ('Penerbit Erlangga', '021-8711521', 'Jakarta Timur'),
   ('Mizan Publishing', '022-7834310', 'Bandung');
 
-INSERT INTO books (isbn, title, author, category_id, location_id, stock, price) VALUES
-  ('978-0141182551', '1984', 'George Orwell',
+INSERT INTO books (isbn, title, author, publisher, category_id, location_id, stock, price) VALUES
+  ('978-0141182551', '1984', 'George Orwell', 'Penguin Books',
     (SELECT id FROM categories WHERE name = 'Fiction'),
     (SELECT id FROM locations WHERE rack_code = 'A1' AND section = 'S1'),
     24, 89000),
-  ('978-0743273565', 'The Great Gatsby', 'F. Scott Fitzgerald',
+  ('978-0743273565', 'The Great Gatsby', 'F. Scott Fitzgerald', 'Scribner',
     (SELECT id FROM categories WHERE name = 'Fiction'),
     (SELECT id FROM locations WHERE rack_code = 'B2' AND section = 'S1'),
     3, 75000),
-  ('978-0061120084', 'To Kill a Mockingbird', 'Harper Lee',
+  ('978-0061120084', 'To Kill a Mockingbird', 'Harper Lee', 'J. B. Lippincott & Co.',
     (SELECT id FROM categories WHERE name = 'Fiction'),
     (SELECT id FROM locations WHERE rack_code = 'A2' AND section = 'S1'),
     0, 95000),
-  ('978-0735211292', 'Atomic Habits', 'James Clear',
+  ('978-0735211292', 'Atomic Habits', 'James Clear', 'Penguin Publishing Group',
     (SELECT id FROM categories WHERE name = 'Self-Help'),
     (SELECT id FROM locations WHERE rack_code = 'B1' AND section = 'S1'),
     15, 110000),
-  ('978-0525559474', 'The Midnight Library', 'Matt Haig',
+  ('978-0525559474', 'The Midnight Library', 'Matt Haig', 'Viking',
     (SELECT id FROM categories WHERE name = 'Fiction'),
-    (SELECT id FROM locations WHERE rack_code = 'A1' AND section = 'S2'),
+    (SELECT id FROM locations WHERE rack_code = 'A3' AND section = 'S2'),
     2, 98000);

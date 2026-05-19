@@ -1,17 +1,20 @@
 -- ============================================
--- SIBOOK Dummy Data Seed
+-- SIBOOK Dummy Data Seed (Skema Indonesia)
 -- Jalankan di Supabase SQL Editor
 -- ============================================
 
 -- 1. Bersihkan data lama (Opsional - Hati-hati!)
--- DELETE FROM transaction_items;
--- DELETE FROM transactions;
--- DELETE FROM books;
--- DELETE FROM categories;
--- DELETE FROM locations;
+-- DELETE FROM detail_keluar;
+-- DELETE FROM detail_masuk;
+-- DELETE FROM transaksi_keluar;
+-- DELETE FROM transaksi_masuk;
+-- DELETE FROM buku;
+-- DELETE FROM kategori;
+-- DELETE FROM rak;
+-- DELETE FROM supplier;
 
 -- 2. Isi Kategori
-INSERT INTO categories (name, description) VALUES
+INSERT INTO kategori (nama_kategori, deskripsi) VALUES
 ('Fiction', 'Novel, cerpen, dan karya imajinatif lainnya'),
 ('Non-Fiction', 'Buku berdasarkan fakta dan informasi nyata'),
 ('Science', 'Ilmu pengetahuan alam dan teknologi'),
@@ -19,55 +22,57 @@ INSERT INTO categories (name, description) VALUES
 ('Comics', 'Manga, manhua, dan novel grafis');
 
 -- 3. Isi Lokasi Rak
-INSERT INTO locations (rack_code, section, capacity) VALUES
+INSERT INTO rak (kode_rak, seksi, kapasitas) VALUES
 ('A1', 'S1', 50),
-('A1', 'S2', 50),
+('A2', 'S2', 50),
 ('B2', 'S1', 100),
 ('C3', 'S1', 75),
 ('D4', 'S1', 200);
 
--- 4. Isi Buku (Berbagai variasi stok)
-INSERT INTO books (isbn, title, author, category_id, location_id, stock, price) 
+-- 4. Isi Supplier
+INSERT INTO supplier (nama, telepon, alamat, email) VALUES
+('Gramedia Pustaka Utama', '021-53650110', 'Jakarta Pusat', 'info@gramedia.com'),
+('Penerbit Erlangga', '021-8711521', 'Jakarta Timur', 'cs@erlangga.co.id'),
+('Mizan Publishing', '022-7834310', 'Bandung', 'info@mizan.com');
+
+-- 5. Isi Buku (Berbagai variasi stok)
+INSERT INTO buku (isbn, judul, pengarang, penerbit, id_kategori, id_rak, stok_saat_ini, stok_minimum, harga_jual) 
 SELECT 
-  '978-602-03-3160-7', 'Laut Bercerita', 'Leila S. Chudori', c.id, l.id, 25, 115000
-FROM categories c, locations l WHERE c.name = 'Fiction' AND l.rack_code = 'A1' AND l.section = 'S1' LIMIT 1;
+  '978-602-03-3160-7', 'Laut Bercerita', 'Leila S. Chudori', 'Gramedia Pustaka Utama', k.id, r.id, 25, 5, 115000
+FROM kategori k, rak r WHERE k.nama_kategori = 'Fiction' AND r.kode_rak = 'A1' AND r.seksi = 'S1' LIMIT 1;
 
-INSERT INTO books (isbn, title, author, category_id, location_id, stock, price) 
+INSERT INTO buku (isbn, judul, pengarang, penerbit, id_kategori, id_rak, stok_saat_ini, stok_minimum, harga_jual) 
 SELECT 
-  '978-0-141-03614-4', '1984', 'George Orwell', c.id, l.id, 3, 95000
-FROM categories c, locations l WHERE c.name = 'Fiction' AND l.rack_code = 'A1' AND l.section = 'S2' LIMIT 1;
+  '978-0-141-03614-4', '1984', 'George Orwell', 'Penguin Books', k.id, r.id, 3, 5, 95000
+FROM kategori k, rak r WHERE k.nama_kategori = 'Fiction' AND r.kode_rak = 'A2' AND r.seksi = 'S2' LIMIT 1;
 
-INSERT INTO books (isbn, title, author, category_id, location_id, stock, price) 
+INSERT INTO buku (isbn, judul, pengarang, penerbit, id_kategori, id_rak, stok_saat_ini, stok_minimum, harga_jual) 
 SELECT 
-  '978-602-06-3317-6', 'Atomic Habits', 'James Clear', c.id, l.id, 50, 128000
-FROM categories c, locations l WHERE c.name = 'Business' AND l.rack_code = 'B2' AND l.section = 'S1' LIMIT 1;
+  '978-602-06-3317-6', 'Atomic Habits', 'James Clear', 'Gramedia Pustaka Utama', k.id, r.id, 50, 10, 128000
+FROM kategori k, rak r WHERE k.nama_kategori = 'Business' AND r.kode_rak = 'B2' AND r.seksi = 'S1' LIMIT 1;
 
-INSERT INTO books (isbn, title, author, category_id, location_id, stock, price) 
+INSERT INTO buku (isbn, judul, pengarang, penerbit, id_kategori, id_rak, stok_saat_ini, stok_minimum, harga_jual) 
 SELECT 
-  '978-602-424-694-5', 'Sapiens', 'Yuval Noah Harari', c.id, l.id, 0, 155000
-FROM categories c, locations l WHERE c.name = 'Non-Fiction' AND l.rack_code = 'C3' AND l.section = 'S1' LIMIT 1;
+  '978-602-424-694-5', 'Sapiens', 'Yuval Noah Harari', 'Kepustakaan Populer Gramedia', k.id, r.id, 0, 5, 155000
+FROM kategori k, rak r WHERE k.nama_kategori = 'Non-Fiction' AND r.kode_rak = 'C3' AND r.seksi = 'S1' LIMIT 1;
 
-INSERT INTO books (isbn, title, author, category_id, location_id, stock, price) 
+INSERT INTO buku (isbn, judul, pengarang, penerbit, id_kategori, id_rak, stok_saat_ini, stok_minimum, harga_jual) 
 SELECT 
-  '978-1-449-33181-8', 'Learning React', 'Alex Banks', c.id, l.id, 8, 350000
-FROM categories c, locations l WHERE c.name = 'Science' AND l.rack_code = 'D4' AND l.section = 'S1' LIMIT 1;
+  '978-1-449-33181-8', 'Learning React', 'Alex Banks', 'O''Reilly Media', k.id, r.id, 8, 3, 350000
+FROM kategori k, rak r WHERE k.nama_kategori = 'Science' AND r.kode_rak = 'D4' AND r.seksi = 'S1' LIMIT 1;
 
--- 5. Contoh Transaksi (Header)
--- Catatan: Pastikan Anda sudah punya user di auth.users jika ingin menautkan user_id
--- Untuk dummy ini kita biarkan user_id NULL atau sesuai user yang login
+-- 6. Contoh Transaksi Keluar (Header)
+INSERT INTO transaksi_keluar (total_item, total_harga, catatan) VALUES
+(2, 230000, 'Penjualan buku Fiction'),
+(1, 128000, 'Penjualan buku Business');
 
-INSERT INTO transactions (invoice_number, type, total_amount) VALUES
-('INV-2026-001', 'out', 230000),
-('INV-2026-002', 'out', 128000);
+-- 7. Detail Transaksi Keluar
+INSERT INTO detail_keluar (id_transaksi_keluar, id_buku, jumlah_keluar, harga_jual)
+SELECT tk.id, b.id, 2, b.harga_jual 
+FROM transaksi_keluar tk, buku b 
+WHERE tk.catatan = 'Penjualan buku Fiction' AND b.judul = 'Laut Bercerita' LIMIT 1;
 
--- 6. Detail Transaksi
--- Kita ambil ID buku secara dinamis
-INSERT INTO transaction_items (transaction_id, book_id, quantity, unit_price)
-SELECT t.id, b.id, 2, b.price 
-FROM transactions t, books b 
-WHERE t.invoice_number = 'INV-2026-001' AND b.title = 'Laut Bercerita' LIMIT 1;
-
-INSERT INTO transaction_items (transaction_id, book_id, quantity, unit_price)
-SELECT t.id, b.id, 1, b.price 
-FROM transactions t, books b 
-WHERE t.invoice_number = 'INV-2026-002' AND b.title = 'Atomic Habits' LIMIT 1;
+INSERT INTO detail_keluar (id_transaksi_keluar, id_buku, jumlah_keluar, harga_jual)
+SELECT tk.id, b.id, 1, b.harga_jual 
+FROM transaksi_keluar tk, buku b 
+WHERE tk.catatan = 'Penjualan buku Business' AND b.judul = 'Atomic Habits' LIMIT 1;

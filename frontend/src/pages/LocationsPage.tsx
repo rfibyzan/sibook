@@ -2,15 +2,25 @@ import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
 import { useNotification } from '../context/NotificationContext';
-import type { Location } from '../lib/types';
+import type { Rak } from '../lib/types';
+
+interface RakWithBuku extends Rak {
+  buku?: { stok_saat_ini: number }[];
+}
 
 const LocationsPage: React.FC = () => {
   const { showAlert, showConfirm } = useNotification();
-  const [locations, setLocations] = useState<Location[]>([]);
+  const [locations, setLocations] = useState<RakWithBuku[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newLocation, setNewLocation] = useState({ rack_code: '', section: '', capacity: 0 });
+  const [newLocation, setNewLocation] = useState({ kode_rak: '', seksi: '', kapasitas: 0 });
   const [editingLocationId, setEditingLocationId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredLocations = locations.filter(loc => 
+    loc.kode_rak.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    loc.seksi.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   useEffect(() => {
     fetchLocations();
@@ -19,49 +29,52 @@ const LocationsPage: React.FC = () => {
   const fetchLocations = async () => {
     setLoading(true);
     const { data } = await supabase
-      .from('locations')
-      .select('*')
-      .order('rack_code', { ascending: true });
-    if (data) setLocations(data);
+      .from('rak')
+      .select('*, buku(stok_saat_ini)')
+      .order('kode_rak', { ascending: true });
+    if (data) setLocations(data as RakWithBuku[]);
     setLoading(false);
   };
 
   const handleAddLocation = async (e: React.FormEvent) => {
     e.preventDefault();
     const { error } = editingLocationId
-      ? await (supabase.from('locations') as any).update(newLocation as any).eq('id', editingLocationId)
-      : await (supabase.from('locations') as any).insert([newLocation] as any);
+      ? await (supabase.from('rak') as any).update(newLocation as any).eq('id', editingLocationId)
+      : await (supabase.from('rak') as any).insert([newLocation] as any);
 
     if (!error) {
       setIsModalOpen(false);
       setEditingLocationId(null);
-      setNewLocation({ rack_code: '', section: '', capacity: 0 });
+      setNewLocation({ kode_rak: '', seksi: '', kapasitas: 0 });
       showAlert(editingLocationId ? 'Lokasi rak berhasil diperbarui!' : 'Lokasi rak berhasil ditambahkan!', 'success');
       fetchLocations();
     } else {
-      showAlert('Gagal menyimpan lokasi: ' + error.message, 'error');
+      const msg = error.message.includes('unique constraint') || error.message.includes('already exists')
+        ? `Kode rak "${newLocation.kode_rak}" sudah digunakan. Silakan gunakan kode lain.`
+        : error.message;
+      showAlert('Gagal menyimpan lokasi: ' + msg, 'error');
     }
   };
 
-  const handleEditClick = (loc: Location) => {
+  const handleEditClick = (loc: Rak) => {
     setEditingLocationId(loc.id);
-    setNewLocation({ rack_code: loc.rack_code, section: loc.section, capacity: loc.capacity });
+    setNewLocation({ kode_rak: loc.kode_rak, seksi: loc.seksi, kapasitas: loc.kapasitas });
     setIsModalOpen(true);
   };
 
   const deleteLocation = (id: string) => {
     showConfirm({
-      title: 'Hapus Lokasi',
-      message: 'Hapus rak ini dari sistem? Pastikan tidak ada buku yang terdaftar di rak ini.',
+      title: 'Hapus Lokasi Rak',
+      message: 'Apakah Anda yakin ingin menghapus lokasi rak ini? Buku yang terdaftar di rak ini akan disesuaikan.',
       confirmText: 'Ya, Hapus',
       type: 'danger',
       onConfirm: async () => {
-        const { error } = await supabase.from('locations').delete().eq('id', id);
+        const { error } = await supabase.from('rak').delete().eq('id', id);
         if (!error) {
-          showAlert('Lokasi berhasil dihapus', 'success');
+          showAlert('Lokasi rak berhasil dihapus!', 'success');
           fetchLocations();
         } else {
-          showAlert('Gagal menghapus: ' + error.message, 'error');
+          showAlert('Gagal menghapus lokasi: ' + error.message, 'error');
         }
       }
     });
@@ -73,71 +86,119 @@ const LocationsPage: React.FC = () => {
         <div>
           <h2 className="font-display-lg text-display-lg text-primary">Manajemen Lokasi Rak</h2>
           <p className="font-body-md text-body-md text-on-surface-variant mt-1">
-            Kelola area penyimpanan dan kapasitas rak buku Anda.
+            Kelola tata letak rak penyimpanan buku untuk memudahkan pencarian stok.
           </p>
         </div>
         <button 
           onClick={() => setIsModalOpen(true)}
           className="bg-primary text-white px-6 py-3 rounded-full font-bold shadow-lg hover:bg-primary/90 transition-all flex items-center gap-2"
         >
-          <span className="material-symbols-outlined">add_location</span>
+          <span className="material-symbols-outlined">add</span>
           Tambah Rak
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Search Filter */}
+      <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <div className="flex-1 relative">
+          <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-secondary">search</span>
+          <input 
+            type="text" 
+            placeholder="Cari rak berdasarkan kode atau seksi..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full h-12 pl-12 pr-4 rounded-2xl border border-outline-variant bg-surface-container-lowest focus:border-primary outline-none transition-all"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {loading ? (
           <div className="col-span-full py-20 text-center">
             <span className="material-symbols-outlined animate-spin text-primary text-4xl">progress_activity</span>
           </div>
-        ) : locations.map((loc) => (
-          <div key={loc.id} className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-6 shadow-sm hover:border-primary/30 transition-all group">
-            <div className="flex justify-between items-center mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-secondary/10 text-secondary rounded-lg flex items-center justify-center">
-                  <span className="material-symbols-outlined text-[20px]">shelves</span>
-                </div>
-                <div>
-                  <p className="font-title-sm text-on-surface leading-none">{loc.rack_code}</p>
-                  <p className="text-[11px] text-secondary uppercase tracking-wider">Seksi {loc.section}</p>
-                </div>
-              </div>
-              <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button 
-                  onClick={() => handleEditClick(loc)}
-                  className="text-outline hover:text-primary"
-                >
-                  <span className="material-symbols-outlined text-[20px]">edit</span>
-                </button>
-                <button 
-                  onClick={() => deleteLocation(loc.id)}
-                  className="text-outline hover:text-error"
-                >
-                  <span className="material-symbols-outlined text-[20px]">delete</span>
-                </button>
-              </div>
-            </div>
-            
-            <div className="space-y-4">
+        ) : filteredLocations.map((loc) => {
+          const totalStock = loc.buku ? loc.buku.reduce((sum, b) => sum + (b.stok_saat_ini || 0), 0) : 0;
+          const percentage = loc.kapasitas > 0 ? Math.min(100, Math.round((totalStock / loc.kapasitas) * 100)) : 0;
+          
+          let progressColor = 'bg-gradient-to-r from-primary to-secondary';
+          let statusText = 'Aktif / Normal';
+          let statusColor = 'text-primary';
+          let statusIcon = 'check_circle';
+
+          if (percentage >= 100) {
+            progressColor = 'bg-gradient-to-r from-error to-red-600';
+            statusText = 'Penuh';
+            statusColor = 'text-error';
+            statusIcon = 'warning';
+          } else if (percentage >= 80) {
+            progressColor = 'bg-gradient-to-r from-warning to-amber-500';
+            statusText = 'Hampir Penuh';
+            statusColor = 'text-warning';
+            statusIcon = 'info';
+          } else if (totalStock === 0) {
+            progressColor = 'bg-outline-variant';
+            statusText = 'Kosong';
+            statusColor = 'text-secondary opacity-60';
+            statusIcon = 'circle_notifications';
+          }
+
+          return (
+            <div key={loc.id} className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-6 shadow-sm hover:border-primary/30 transition-all group flex flex-col justify-between">
               <div>
-                <div className="flex justify-between text-[11px] font-label-uppercase text-secondary mb-1">
-                  <span>Kapasitas</span>
-                  <span>{loc.capacity} Buku</span>
+                <div className="flex justify-between items-center mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-secondary/10 text-secondary rounded-lg flex items-center justify-center">
+                      <span className="material-symbols-outlined text-[20px]">shelves</span>
+                    </div>
+                    <div>
+                      <p className="font-title-sm text-on-surface leading-none">{loc.kode_rak}</p>
+                      <p className="text-[11px] text-secondary uppercase tracking-wider mt-1">Seksi {loc.seksi}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button 
+                      onClick={() => handleEditClick(loc)}
+                      className="text-outline hover:text-primary"
+                    >
+                      <span className="material-symbols-outlined text-[20px]">edit</span>
+                    </button>
+                    <button 
+                      onClick={() => deleteLocation(loc.id)}
+                      className="text-outline hover:text-error"
+                    >
+                      <span className="material-symbols-outlined text-[20px]">delete</span>
+                    </button>
+                  </div>
                 </div>
-                <div className="h-1.5 bg-surface-container-high rounded-full overflow-hidden">
-                  <div className="h-full bg-secondary w-full opacity-30"></div>
+                
+                <div className="space-y-4">
+                  <div>
+                    <div className="flex justify-between text-[11px] font-label-uppercase text-secondary mb-1">
+                      <span>Kapasitas ({percentage}%)</span>
+                      <span>{totalStock} / {loc.kapasitas} Buku</span>
+                    </div>
+                    <div className="h-1.5 bg-surface-container-high rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full ${progressColor} transition-all duration-500 ease-out`}
+                        style={{ width: `${percentage}%` }}
+                      ></div>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="pt-2 border-t border-outline-variant flex justify-between items-center">
-                <span className="text-[10px] text-outline italic">Status: Aktif</span>
-                <span className="material-symbols-outlined text-green-500 text-[16px]">check_circle</span>
+              <div className="pt-4 mt-4 border-t border-outline-variant flex justify-between items-center">
+                <span className={`text-[10px] font-bold uppercase tracking-wider ${statusColor}`}>{statusText}</span>
+                <span className={`material-symbols-outlined ${statusColor} text-[16px]`}>{statusIcon}</span>
               </div>
             </div>
-          </div>
-        ))}
-        {!loading && locations.length === 0 && (
+          );
+        })}
+        {!loading && filteredLocations.length === 0 && (
           <div className="col-span-full py-20 text-center text-secondary bg-surface-container-low rounded-3xl border-2 border-dashed border-outline-variant">
-            Belum ada data rak. Klik "Tambah Rak" untuk memulai.
+            {locations.length === 0 
+              ? 'Belum ada data rak. Klik "Tambah Rak" untuk memulai.' 
+              : 'Tidak ada lokasi rak yang sesuai dengan pencarian.'}
           </div>
         )}
       </div>
@@ -152,18 +213,18 @@ const LocationsPage: React.FC = () => {
                 <div className="flex flex-col gap-1.5">
                   <label className="font-label-uppercase text-secondary text-[11px] uppercase tracking-wider">Kode Rak</label>
                   <input 
-                    type="text" required placeholder="A1, B2..."
-                    value={newLocation.rack_code}
-                    onChange={(e) => setNewLocation({...newLocation, rack_code: e.target.value})}
+                    type="text" required placeholder="Masukkan kode rak..."
+                    value={newLocation.kode_rak}
+                    onChange={(e) => setNewLocation({...newLocation, kode_rak: e.target.value})}
                     className="w-full h-12 px-4 rounded-xl border border-outline-variant bg-surface focus:border-primary outline-none"
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label className="font-label-uppercase text-secondary text-[11px] uppercase tracking-wider">Seksi</label>
                   <input 
-                    type="text" required placeholder="S1, S2..."
-                    value={newLocation.section}
-                    onChange={(e) => setNewLocation({...newLocation, section: e.target.value})}
+                    type="text" required placeholder="Masukkan seksi..."
+                    value={newLocation.seksi}
+                    onChange={(e) => setNewLocation({...newLocation, seksi: e.target.value})}
                     className="w-full h-12 px-4 rounded-xl border border-outline-variant bg-surface focus:border-primary outline-none"
                   />
                 </div>
@@ -172,8 +233,8 @@ const LocationsPage: React.FC = () => {
                 <label className="font-label-uppercase text-secondary text-[11px] uppercase tracking-wider">Kapasitas Maksimal</label>
                 <input 
                   type="number" required
-                  value={newLocation.capacity}
-                  onChange={(e) => setNewLocation({...newLocation, capacity: parseInt(e.target.value)})}
+                  value={newLocation.kapasitas || ''}
+                  onChange={(e) => setNewLocation({...newLocation, kapasitas: parseInt(e.target.value) || 0})}
                   className="w-full h-12 px-4 rounded-xl border border-outline-variant bg-surface focus:border-primary outline-none"
                   placeholder="Jumlah buku"
                 />
