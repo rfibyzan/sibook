@@ -73,10 +73,6 @@ const BookManagementPage: React.FC = () => {
       showAlert('Lokasi Rak wajib dipilih! Silakan pilih rak penyimpanan.', 'error');
       return;
     }
-    if (!newBook.id_supplier) {
-      showAlert('Supplier wajib dipilih! Silakan pilih supplier buku.', 'error');
-      return;
-    }
 
     const bookData: any = {
       isbn: newBook.isbn,
@@ -85,8 +81,8 @@ const BookManagementPage: React.FC = () => {
       penerbit: newBook.penerbit || null,
       id_kategori: newBook.id_kategori,
       id_rak: newBook.id_rak,
-      id_supplier: newBook.id_supplier,
-      stok_minimum: newBook.stok_minimum,
+      id_supplier: null,
+      stok_minimum: 5,
       harga_jual: newBook.harga_jual,
     };
 
@@ -291,7 +287,7 @@ const BookManagementPage: React.FC = () => {
             </div>
             
             <form onSubmit={handleAddBook} className="p-8 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="flex flex-col gap-1.5">
                   <label className="font-label-uppercase text-secondary text-[11px] uppercase tracking-wider">ISBN</label>
                   <input required placeholder="Contoh: 978602..." className="w-full h-12 px-4 rounded-xl border border-outline-variant bg-surface outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm" value={newBook.isbn} onChange={e => setNewBook({...newBook, isbn: e.target.value})} />
@@ -336,46 +332,6 @@ const BookManagementPage: React.FC = () => {
                     )}
                   </div>
                 </div>
-
-                {/* Searchable Supplier */}
-                <div className="flex flex-col gap-1.5 relative">
-                  <label className="font-label-uppercase text-secondary text-[11px] uppercase tracking-wider">Supplier</label>
-                  <div className="relative">
-                    <input 
-                      type="text"
-                      placeholder="Pilih supplier..."
-                      className="w-full h-12 pl-4 pr-10 rounded-xl border border-outline-variant bg-surface outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm"
-                      value={supSearch}
-                      onFocus={() => setShowSupList(true)}
-                      onBlur={() => setTimeout(() => setShowSupList(false), 200)}
-                      onChange={(e) => {
-                        setSupSearch(e.target.value);
-                        setNewBook({...newBook, id_supplier: ''}); // Reset ID if typing
-                      }}
-                    />
-                    <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-secondary pointer-events-none">expand_more</span>
-                    
-                    {showSupList && (
-                      <div className="absolute top-full left-0 right-0 mt-2 bg-surface-container-lowest border border-outline-variant rounded-xl shadow-xl z-10 max-h-48 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
-                        {filteredSuppliers.length > 0 ? filteredSuppliers.map(s => (
-                          <div 
-                            key={s.id}
-                            className="px-4 py-3 hover:bg-primary/10 cursor-pointer text-sm transition-colors"
-                            onClick={() => {
-                              setNewBook({...newBook, id_supplier: s.id});
-                              setSupSearch(s.nama);
-                              setShowSupList(false);
-                            }}
-                          >
-                            {s.nama}
-                          </div>
-                        )) : (
-                          <div className="px-4 py-3 text-sm text-secondary italic text-center">Tidak ditemukan</div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
               </div>
 
               <div className="flex flex-col gap-1.5">
@@ -394,7 +350,7 @@ const BookManagementPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Searchable Location - Opens UPWARDS */}
                 <div className="flex flex-col gap-1.5 relative">
                   <label className="font-label-uppercase text-secondary text-[11px] uppercase tracking-wider">Lokasi Rak</label>
@@ -434,17 +390,6 @@ const BookManagementPage: React.FC = () => {
                       </div>
                     )}
                   </div>
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="font-label-uppercase text-secondary text-[11px] uppercase tracking-wider">Stok Minimum</label>
-                  <input 
-                    type="text" 
-                    required 
-                    className="w-full h-12 px-4 rounded-xl border border-outline-variant bg-surface outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 text-right font-mono" 
-                    value={formatNumber(newBook.stok_minimum)} 
-                    onChange={e => setNewBook({...newBook, stok_minimum: parseNumber(e.target.value)})} 
-                  />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
