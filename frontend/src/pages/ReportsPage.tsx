@@ -760,7 +760,7 @@ const ReportsPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant">
-                {filteredCombinedRecords.map((trans) => (
+                {currentRecords.map((trans) => (
                   <tr key={trans.id} className="hover:bg-primary/[0.02] transition-colors">
                     <td className="px-8 py-5 font-bold text-primary font-mono text-[13px]">
                       {trans.label}
@@ -797,6 +797,15 @@ const ReportsPage: React.FC = () => {
               </tbody>
             </table>
           </div>
+          {!loading && totalPages > 1 && (
+            <div className="no-print">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+              />
+            </div>
+          )}
         </div>
       </>
     );
