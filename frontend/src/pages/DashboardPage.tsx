@@ -14,76 +14,112 @@ const DashboardPage: React.FC = () => {
   });
   const [loading, setLoading] = useState(true);
 
-  const [salesData, setSalesData] = useState<any[]>([]);
+  // Chart states
+  const defaultEndDate = new Date();
+  const defaultStartDate = new Date();
+  defaultStartDate.setDate(defaultEndDate.getDate() - 7);
 
+  const [salesData, setSalesData] = useState<any[]>([]);
+  const [startDate, setStartDate] = useState(defaultStartDate.toISOString().split('T')[0]);
+  const [endDate, setEndDate] = useState(defaultEndDate.toISOString().split('T')[0]);
+  const [chartType, setChartType] = useState<'transactions' | 'revenue'>('transactions');
+  const [dateError, setDateError] = useState('');
+
+  // Initial load for metrics
   useEffect(() => {
-    const loadAll = async () => {
+    const loadMetrics = async () => {
       setLoading(true);
-      // Jalankan semua fetch secara paralel untuk performa maksimal
-      await Promise.all([fetchDashboardData(), fetchSalesChartData()]);
+      await fetchDashboardData();
       setLoading(false);
     };
-    loadAll();
+    loadMetrics();
   }, []);
 
+  // Effect specifically for chart data
+  useEffect(() => {
+    fetchSalesChartData();
+  }, [startDate, endDate, chartType]);
+
   const fetchDashboardData = async () => {
-    const today = new Date().toISOString().split('T')[0];
+    try {
+      const today = new Date().toISOString().split('T')[0];
 
-    // Jalankan 4 query secara PARALEL, bukan sequential
-    // Menggunakan tabel baru: buku, transaksi_keluar
-    const [booksRes, lowRes, outRes, transRes] = await Promise.all([
-      supabase.from('buku').select('*', { count: 'exact', head: true }),
-      supabase.from('buku').select('*', { count: 'exact', head: true }).lte('stok_saat_ini', 5).gt('stok_saat_ini', 0),
-      supabase.from('buku').select('*', { count: 'exact', head: true }).eq('stok_saat_ini', 0),
-      supabase.from('transaksi_keluar').select('*', { count: 'exact', head: true }).gte('dibuat_pada', today),
-    ]);
+      const [booksRes, lowRes, outRes, transRes] = await Promise.all([
+        supabase.from('buku').select('*', { count: 'exact', head: true }),
+        supabase.from('buku').select('*', { count: 'exact', head: true }).lte('stok_saat_ini', 5).gt('stok_saat_ini', 0),
+        supabase.from('buku').select('*', { count: 'exact', head: true }).eq('stok_saat_ini', 0),
+        supabase.from('transaksi_keluar').select('*', { count: 'exact', head: true }).gte('dibuat_pada', today),
+      ]);
 
-    setMetrics({
-      totalBooks: booksRes.count || 0,
-      lowStock: lowRes.count || 0,
-      outOfStock: outRes.count || 0,
-      totalTransactions: transRes.count || 0,
-    });
+      setMetrics({
+        totalBooks: booksRes.count || 0,
+        lowStock: lowRes.count || 0,
+        outOfStock: outRes.count || 0,
+        totalTransactions: transRes.count || 0,
+      });
+    } catch (error) {
+      console.error('Error fetching dashboard metrics:', error);
+    }
   };
 
   const fetchSalesChartData = async () => {
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    try {
+      const startObj = new Date(startDate);
+      const endObj = new Date(endDate);
+      
+      if (startObj >= endObj) {
+        setDateError('Tanggal mulai harus lebih kecil dari tanggal akhir dan tidak boleh sama.');
+        return;
+      }
+      setDateError('');
 
-    // Hitung tanggal 7 hari lalu
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - 6);
-    const startStr = startDate.toISOString().split('T')[0] + 'T00:00:00';
+      const startStr = startDate + 'T00:00:00';
+      const endStr = endDate + 'T23:59:59';
 
-    // SATU query untuk semua 7 hari, ambil dibuat_pada saja
-    const { data } = await supabase
-      .from('transaksi_keluar')
-      .select('dibuat_pada')
-      .gte('dibuat_pada', startStr);
+      const { data, error } = await supabase
+        .from('transaksi_keluar')
+        .select('dibuat_pada, total_harga, detail_keluar (jumlah_keluar, harga_jual)')
+        .gte('dibuat_pada', startStr)
+        .lte('dibuat_pada', endStr);
 
-    // Kelompokkan transaksi berdasarkan tanggal di client-side
-    const countsByDate: Record<string, number> = {};
-    (data || []).forEach((row: { dibuat_pada: string }) => {
-      const dateKey = row.dibuat_pada.split('T')[0];
-      countsByDate[dateKey] = (countsByDate[dateKey] || 0) + 1;
-    });
+      if (error) {
+        console.error('Supabase fetch error:', error);
+      }
 
-    // Bangun array 7 hari terakhir
-    const last7Days = [];
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const dateStr = d.toISOString().split('T')[0];
-      const dayName = days[d.getDay()];
-      const count = countsByDate[dateStr] || 0;
+      const grouped: Record<string, number> = {};
+      
+      for (let d = new Date(startObj); d <= endObj; d.setDate(d.getDate() + 1)) {
+        grouped[d.toISOString().split('T')[0]] = 0;
+      }
 
-      last7Days.push({
-        day: dayName,
-        val: count,
-        height: `${Math.min(count * 10, 100)}%`,
-        highlight: i === 0,
+      (data || []).forEach((row: any) => {
+        const dateKey = row.dibuat_pada?.split('T')[0];
+        if (dateKey && grouped[dateKey] !== undefined) {
+          if (chartType === 'transactions') {
+             grouped[dateKey] += 1;
+          } else {
+             let amount = row.total_harga;
+             if (!amount) {
+                amount = row.detail_keluar?.reduce((sum: number, item: any) => sum + ((item.jumlah_keluar || 0) * (item.harga_jual || 0)), 0) || 0;
+             }
+             grouped[dateKey] += amount;
+          }
+        }
       });
+
+      const days = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+      const chartArray = Object.keys(grouped).sort().map(dateStr => {
+         const d = new Date(dateStr);
+         return {
+           day: `${days[d.getDay()]}, ${d.getDate()}/${d.getMonth()+1}`,
+           val: grouped[dateStr],
+         };
+      });
+
+      setSalesData(chartArray);
+    } catch (error) {
+      console.error('Error fetching sales chart data:', error);
     }
-    setSalesData(last7Days);
   };
 
   if (loading) {
@@ -141,7 +177,16 @@ const DashboardPage: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-gutter items-start">
         {/* Main Chart Section */}
         <div className="lg:col-span-2">
-          <SalesChart data={salesData} />
+          <SalesChart 
+            data={salesData} 
+            chartType={chartType}
+            setChartType={setChartType}
+            startDate={startDate}
+            setStartDate={setStartDate}
+            endDate={endDate}
+            setEndDate={setEndDate}
+            dateError={dateError}
+          />
         </div>
 
         {/* Side Panel: Notifications/Low Stock Alerts */}
