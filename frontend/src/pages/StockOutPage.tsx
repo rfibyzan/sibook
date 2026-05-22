@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import type { Buku } from '../lib/types';
+import Pagination from '../components/Pagination';
 
 interface SaleItem {
   id: string; // book id
@@ -22,6 +23,9 @@ const StockOutPage: React.FC = () => {
   const [isSuccess, setIsSuccess] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [catatan, setCatatan] = useState('');
+  // Pagination for cart
+  const [cartPage, setCartPage] = useState(1);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     fetchBooks();
@@ -127,7 +131,15 @@ const StockOutPage: React.FC = () => {
   const filteredBooks = availableBooks.filter(b => 
     b.judul.toLowerCase().includes(searchTerm.toLowerCase()) || 
     b.isbn.includes(searchTerm)
-  ).slice(0, 5);
+  );
+
+  // Cart pagination
+  const cartTotalPages = Math.max(1, Math.ceil(cart.length / itemsPerPage));
+  const currentCartItems = cart.slice((cartPage - 1) * itemsPerPage, cartPage * itemsPerPage);
+
+  useEffect(() => {
+    setCartPage(1);
+  }, [cart.length]);
 
   return (
     <Layout>
@@ -165,19 +177,21 @@ const StockOutPage: React.FC = () => {
                   
                   {searchTerm && (
                     <div className="absolute top-full left-0 right-0 mt-2 bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-xl z-20 overflow-hidden">
-                      {filteredBooks.length > 0 ? filteredBooks.map(book => (
-                        <button 
-                          key={book.id}
-                          onClick={() => addToCart(book)}
-                          className="w-full p-4 text-left hover:bg-primary/5 border-b border-outline-variant last:border-0 flex justify-between items-center transition-colors"
-                        >
-                          <div>
-                            <p className="font-bold text-on-surface text-sm">{book.judul}</p>
-                            <p className="text-[11px] text-secondary">{book.isbn} • Stok: {book.stok_saat_ini}</p>
-                          </div>
-                          <p className="font-data-tabular text-primary font-bold text-sm">Rp {book.harga_jual.toLocaleString()}</p>
-                        </button>
-                      )) : (
+                      {filteredBooks.slice(0, 5).length > 0 ? (
+                        filteredBooks.slice(0, 5).map(book => (
+                          <button 
+                            key={book.id}
+                            onClick={() => addToCart(book)}
+                            className="w-full p-4 text-left hover:bg-primary/5 border-b border-outline-variant last:border-0 flex justify-between items-center transition-colors"
+                          >
+                            <div>
+                              <p className="font-bold text-on-surface text-sm">{book.judul}</p>
+                              <p className="text-[11px] text-secondary">{book.isbn} • Stok: {book.stok_saat_ini}</p>
+                            </div>
+                            <p className="font-data-tabular text-primary font-bold text-sm">Rp {book.harga_jual.toLocaleString()}</p>
+                          </button>
+                        ))
+                      ) : (
                         <div className="p-4 text-center text-secondary text-sm italic">Buku tidak ditemukan</div>
                       )}
                     </div>
@@ -199,7 +213,7 @@ const StockOutPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant">
-                  {cart.map(item => {
+                  {cart.length > 0 ? currentCartItems.map(item => {
                     const original = availableBooks.find(b => b.id === item.id);
                     return (
                       <tr key={item.id} className="hover:bg-surface-container-low/20 transition-colors">
@@ -227,8 +241,7 @@ const StockOutPage: React.FC = () => {
                         </td>
                       </tr>
                     );
-                  })}
-                  {cart.length === 0 && (
+                  }) : (
                     <tr>
                       <td colSpan={5} className="py-32 text-center">
                         <div className="flex flex-col items-center gap-2 text-secondary opacity-50">
@@ -241,6 +254,11 @@ const StockOutPage: React.FC = () => {
                 </tbody>
               </table>
             </div>
+            {cartTotalPages > 1 && (
+              <div className="px-6 py-4 border-t bg-surface-container-lowest">
+                <Pagination currentPage={cartPage} totalPages={cartTotalPages} onPageChange={setCartPage} />
+              </div>
+            )}
           </div>
         </div>
 

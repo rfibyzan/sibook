@@ -3,6 +3,7 @@ import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
 import { useNotification } from '../context/NotificationContext';
 import type { Buku, Kategori, Rak, Supplier } from '../lib/types';
+import Pagination from '../components/Pagination';
 
 const BookManagementPage: React.FC = () => {
   const { showAlert, showConfirm } = useNotification();
@@ -36,12 +37,23 @@ const BookManagementPage: React.FC = () => {
   const [editingBookId, setEditingBookId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   const filteredBooks = books.filter(book => 
     book.judul.toLowerCase().includes(searchTerm.toLowerCase()) ||
     book.pengarang.toLowerCase().includes(searchTerm.toLowerCase()) ||
     book.isbn.includes(searchTerm) ||
     (book.penerbit && book.penerbit.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  const totalPages = Math.ceil(filteredBooks.length / itemsPerPage);
+  const currentBooks = filteredBooks.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   useEffect(() => {
     fetchData();
@@ -231,7 +243,7 @@ const BookManagementPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant">
-                {filteredBooks.map((book) => {
+                {currentBooks.map((book) => {
                   const status = getStatusInfo(book.stok_saat_ini, book.stok_minimum);
                   return (
                     <tr key={book.id} className="hover:bg-primary/[0.02] group transition-colors">
@@ -266,7 +278,7 @@ const BookManagementPage: React.FC = () => {
                     </tr>
                   );
                 })}
-                {filteredBooks.length === 0 && (
+                {currentBooks.length === 0 && (
                   <tr>
                     <td colSpan={4} className="px-8 py-20 text-center text-secondary italic">
                       Tidak ada buku yang sesuai dengan pencarian.
@@ -276,6 +288,13 @@ const BookManagementPage: React.FC = () => {
               </tbody>
             </table>
           </div>
+          {totalPages > 1 && (
+            <Pagination 
+              currentPage={currentPage} 
+              totalPages={totalPages} 
+              onPageChange={setCurrentPage} 
+            />
+          )}
         </div>
       )}
 

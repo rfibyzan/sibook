@@ -3,6 +3,7 @@ import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
 import { useNotification } from '../context/NotificationContext';
 import type { Rak } from '../lib/types';
+import Pagination from '../components/Pagination';
 
 interface RakWithBuku extends Rak {
   buku?: { stok_saat_ini: number }[];
@@ -17,10 +18,21 @@ const LocationsPage: React.FC = () => {
   const [editingLocationId, setEditingLocationId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   const filteredLocations = locations.filter(loc => 
     loc.kode_rak.toLowerCase().includes(searchTerm.toLowerCase()) ||
     loc.seksi.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const totalPages = Math.ceil(filteredLocations.length / itemsPerPage);
+  const currentLocations = filteredLocations.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   useEffect(() => {
     fetchLocations();
@@ -117,7 +129,7 @@ const LocationsPage: React.FC = () => {
           <div className="col-span-full py-20 text-center">
             <span className="material-symbols-outlined animate-spin text-primary text-4xl">progress_activity</span>
           </div>
-        ) : filteredLocations.map((loc) => {
+        ) : currentLocations.map((loc) => {
           const totalStock = loc.buku ? loc.buku.reduce((sum, b) => sum + (b.stok_saat_ini || 0), 0) : 0;
           const percentage = loc.kapasitas > 0 ? Math.min(100, Math.round((totalStock / loc.kapasitas) * 100)) : 0;
           
@@ -194,7 +206,7 @@ const LocationsPage: React.FC = () => {
             </div>
           );
         })}
-        {!loading && filteredLocations.length === 0 && (
+        {!loading && currentLocations.length === 0 && (
           <div className="col-span-full py-20 text-center text-secondary bg-surface-container-low rounded-3xl border-2 border-dashed border-outline-variant">
             {locations.length === 0 
               ? 'Belum ada data rak. Klik "Tambah Rak" untuk memulai.' 
@@ -202,6 +214,16 @@ const LocationsPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {!loading && totalPages > 1 && (
+        <div className="mt-6 rounded-[32px] overflow-hidden border border-outline-variant">
+          <Pagination 
+            currentPage={currentPage} 
+            totalPages={totalPages} 
+            onPageChange={setCurrentPage} 
+          />
+        </div>
+      )}
 
       {/* Add Modal */}
       {isModalOpen && (

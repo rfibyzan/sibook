@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import StatCard from '../components/StatCard';
 import { supabase } from '../lib/supabase';
+import Pagination from '../components/Pagination';
 
 interface TransaksiMasukRecord {
   id: string;
@@ -47,6 +48,13 @@ const ReportsPage: React.FC = () => {
     inCount: 0
   });
   const [loading, setLoading] = useState(true);
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  const totalPages = Math.ceil(combinedRecords.length / itemsPerPage);
+  const currentRecords = combinedRecords.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   useEffect(() => {
     fetchReportData();
@@ -211,7 +219,7 @@ const ReportsPage: React.FC = () => {
                     <span className="material-symbols-outlined animate-spin text-primary text-4xl">progress_activity</span>
                   </td>
                 </tr>
-              ) : combinedRecords.map((trans) => (
+              ) : currentRecords.map((trans) => (
                 <tr key={trans.id} className="hover:bg-primary/[0.02] transition-colors">
                   <td className="px-8 py-5 font-bold text-primary font-mono text-[13px]">
                     {trans.label}
@@ -238,7 +246,7 @@ const ReportsPage: React.FC = () => {
                   </td>
                 </tr>
               ))}
-              {!loading && combinedRecords.length === 0 && (
+              {!loading && currentRecords.length === 0 && (
                 <tr>
                   <td colSpan={6} className="px-8 py-20 text-center text-secondary italic">
                     Belum ada riwayat transaksi.
@@ -248,6 +256,15 @@ const ReportsPage: React.FC = () => {
             </tbody>
           </table>
         </div>
+        {!loading && totalPages > 1 && (
+          <div className="no-print">
+            <Pagination 
+              currentPage={currentPage} 
+              totalPages={totalPages} 
+              onPageChange={setCurrentPage} 
+            />
+          </div>
+        )}
       </div>
     </Layout>
   );
