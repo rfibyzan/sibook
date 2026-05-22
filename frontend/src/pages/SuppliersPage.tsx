@@ -3,6 +3,7 @@ import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
 import { useNotification } from '../context/NotificationContext';
 import type { Supplier } from '../lib/types';
+import Pagination from '../components/Pagination';
 
 const SuppliersPage: React.FC = () => {
   const { showAlert, showConfirm } = useNotification();
@@ -13,12 +14,23 @@ const SuppliersPage: React.FC = () => {
   const [editingSupplierId, setEditingSupplierId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   const filteredSuppliers = suppliers.filter(sup => 
     sup.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (sup.telepon && sup.telepon.includes(searchTerm)) ||
     (sup.email && sup.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (sup.alamat && sup.alamat.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  const totalPages = Math.ceil(filteredSuppliers.length / itemsPerPage);
+  const currentSuppliers = filteredSuppliers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   useEffect(() => {
     fetchSuppliers();
@@ -117,7 +129,7 @@ const SuppliersPage: React.FC = () => {
           <div className="col-span-full py-20 text-center">
             <span className="material-symbols-outlined animate-spin text-primary text-4xl">progress_activity</span>
           </div>
-        ) : filteredSuppliers.map((sup) => (
+        ) : currentSuppliers.map((sup) => (
           <div key={sup.id} className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-6 shadow-sm hover:shadow-md transition-all group flex flex-col justify-between min-h-[220px]">
             <div>
               <div className="flex justify-between items-start mb-4">
@@ -164,7 +176,7 @@ const SuppliersPage: React.FC = () => {
             </div>
           </div>
         ))}
-        {!loading && filteredSuppliers.length === 0 && (
+        {!loading && currentSuppliers.length === 0 && (
           <div className="col-span-full py-20 text-center text-secondary bg-surface-container-low rounded-3xl border-2 border-dashed border-outline-variant">
             {suppliers.length === 0 
               ? 'Belum ada data supplier. Klik "Tambah Supplier" untuk memulai.' 
@@ -172,6 +184,16 @@ const SuppliersPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {!loading && totalPages > 1 && (
+        <div className="mt-6 rounded-[32px] overflow-hidden border border-outline-variant">
+          <Pagination 
+            currentPage={currentPage} 
+            totalPages={totalPages} 
+            onPageChange={setCurrentPage} 
+          />
+        </div>
+      )}
 
       {/* Add Modal */}
       {isModalOpen && (

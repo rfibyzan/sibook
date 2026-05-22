@@ -3,6 +3,7 @@ import Layout from '../components/Layout';
 import StatCard from '../components/StatCard';
 import { supabase } from '../lib/supabase';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import Pagination from '../components/Pagination';
 
 interface TransaksiMasukRecord {
   id: string;
@@ -101,6 +102,11 @@ const ReportsPage: React.FC = () => {
   // Map for rapid lookup
   const [bookMap, setBookMap] = useState<Record<string, { judul: string; pengarang: string; harga_jual: number }>>({});
   const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
 
   useEffect(() => {
     fetchReportData();
@@ -246,6 +252,10 @@ const ReportsPage: React.FC = () => {
       return true;
     });
   }, [rawCombinedRecords, searchTerm, transactionType, startDate, endDate]);
+
+  // Pagination derived from filtered results so paging respects filters
+  const totalPages = useMemo(() => Math.max(1, Math.ceil(filteredCombinedRecords.length / itemsPerPage)), [filteredCombinedRecords.length, itemsPerPage]);
+  const currentRecords = useMemo(() => filteredCombinedRecords.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage), [filteredCombinedRecords, currentPage, itemsPerPage]);
 
   // 2. Filtered Inventory Records for Tab 3
   const filteredBooks = useMemo(() => {

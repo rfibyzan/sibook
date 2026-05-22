@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useNotification } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
 import { createClient } from '@supabase/supabase-js';
+import Pagination from '../components/Pagination';
 
 interface UserProfile {
   id: string;
@@ -173,6 +174,17 @@ const UsersPage: React.FC = () => {
     return matchesName && matchesRole;
   });
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  const totalPages = Math.ceil(filteredProfiles.length / itemsPerPage);
+  const currentProfiles = filteredProfiles.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, roleFilter]);
+
   return (
     <Layout>
       <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
@@ -242,7 +254,7 @@ const UsersPage: React.FC = () => {
                     <span className="material-symbols-outlined animate-spin text-primary text-4xl">progress_activity</span>
                   </td>
                 </tr>
-              ) : filteredProfiles.map((profile) => (
+              ) : currentProfiles.map((profile) => (
                 <tr key={profile.id} className="hover:bg-primary/[0.02] transition-colors group">
                   <td className="px-8 py-5">
                     <div className="flex items-center gap-4">
@@ -294,7 +306,7 @@ const UsersPage: React.FC = () => {
                   </td>
                 </tr>
               ))}
-              {!loading && filteredProfiles.length === 0 && (
+              {!loading && currentProfiles.length === 0 && (
                 <tr>
                   <td colSpan={3} className="px-8 py-20 text-center text-secondary italic">
                     Tidak ada staf yang sesuai dengan filter.
@@ -304,6 +316,13 @@ const UsersPage: React.FC = () => {
             </tbody>
           </table>
         </div>
+        {!loading && totalPages > 1 && (
+          <Pagination 
+            currentPage={currentPage} 
+            totalPages={totalPages} 
+            onPageChange={setCurrentPage} 
+          />
+        )}
       </div>
 
       {/* Add Staff Modal */}
