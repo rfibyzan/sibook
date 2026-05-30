@@ -56,11 +56,11 @@ function AppRoutes() {
 function App() {
   return (
     <Router>
-      <NotificationProvider>
-        <AuthProvider>
+      <AuthProvider>
+        <NotificationProvider>
           <AppRoutes />
-        </AuthProvider>
-      </NotificationProvider>
+        </NotificationProvider>
+      </AuthProvider>
     </Router>
   );
 }

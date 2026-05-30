@@ -19,7 +19,7 @@ const rolePriority: Record<string, number> = {
   'Owner': 1,
   'Manager': 2,
   'Kasir': 3,
-  'Staff': 4
+  'Staff Gudang': 4
 };
 
 const UsersPage: React.FC = () => {
@@ -41,7 +41,7 @@ const UsersPage: React.FC = () => {
     full_name: '',
     email: '',
     password: '',
-    role: 'Staff'
+    role: 'Staff Gudang'
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -96,7 +96,7 @@ const UsersPage: React.FC = () => {
       if (signUpData.user) {
         showAlert('Staf baru berhasil didaftarkan!', 'success');
         setIsAddModalOpen(false);
-        setNewStaff({ full_name: '', email: '', password: '', role: 'Staff' });
+        setNewStaff({ full_name: '', email: '', password: '', role: 'Staff Gudang' });
         setTimeout(() => fetchProfiles(), 1500);
       }
     } catch (error: any) {
@@ -154,10 +154,10 @@ const UsersPage: React.FC = () => {
   // RBAC Helper: Get Available Roles for Select
   const getAvailableRoles = () => {
     if (currentUser?.role === 'Owner') {
-      return ['Manager', 'Kasir', 'Staff'];
+      return ['Manager', 'Kasir', 'Staff Gudang'];
     }
     if (currentUser?.role === 'Manager') {
-      return ['Kasir', 'Staff'];
+      return ['Kasir', 'Staff Gudang'];
     }
     return [];
   };
@@ -198,7 +198,7 @@ const UsersPage: React.FC = () => {
           {(currentUser?.role === 'Owner' || currentUser?.role === 'Manager') && (
             <button 
               onClick={() => {
-                setNewStaff({ ...newStaff, role: getAvailableRoles()[0] || 'Staff' });
+                setNewStaff({ ...newStaff, role: getAvailableRoles()[0] || 'Staff Gudang' });
                 setIsAddModalOpen(true);
               }}
               className="bg-primary text-white px-6 py-3 rounded-full font-bold shadow-lg hover:bg-primary/90 transition-all flex items-center gap-2 whitespace-nowrap"
@@ -232,7 +232,7 @@ const UsersPage: React.FC = () => {
             <option value="Owner">Owner</option>
             <option value="Manager">Manager</option>
             <option value="Kasir">Kasir</option>
-            <option value="Staff">Staff</option>
+            <option value="Staff Gudang">Staff Gudang</option>
           </select>
         </div>
       </div>
@@ -276,7 +276,7 @@ const UsersPage: React.FC = () => {
                       profile.role === 'Manager' ? 'bg-primary/10 text-primary border-primary/20' :
                       'bg-secondary/10 text-secondary border-secondary/20'
                     }`}>
-                      {profile.role || 'Staff'}
+                      {profile.role || 'Staff Gudang'}
                     </span>
                   </td>
                   <td className="px-8 py-5 text-right">

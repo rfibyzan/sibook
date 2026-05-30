@@ -6,10 +6,8 @@ import { useNotification } from '../context/NotificationContext';
 const Header: React.FC = () => {
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const { signOut, user, profile } = useAuth();
-  const { showConfirm } = useNotification();
+  const { showConfirm, notifications, unreadCount, markAllAsRead } = useNotification();
   const navigate = useNavigate();
-
-  const notifications: any[] = [];
 
   const handleSignOut = () => {
     showConfirm({
@@ -22,6 +20,10 @@ const Header: React.FC = () => {
         navigate('/login');
       }
     });
+  };
+
+  const handleNotifClick = () => {
+    setIsNotifOpen(!isNotifOpen);
   };
 
   const displayName = profile?.full_name || user?.email?.split('@')[0] || 'Admin User';
@@ -37,12 +39,14 @@ const Header: React.FC = () => {
         {/* Notification Bell */}
         <div className="relative">
           <button 
-            onClick={() => setIsNotifOpen(!isNotifOpen)}
+            onClick={handleNotifClick}
             className="p-2 hover:bg-surface-container rounded-full text-on-surface-variant transition-colors relative"
           >
             <span className="material-symbols-outlined">notifications</span>
-            {notifications.length > 0 && (
-              <span className="absolute top-2 right-2 w-2 h-2 bg-error rounded-full border border-surface"></span>
+            {unreadCount > 0 && (
+              <span className="absolute top-2 right-2 flex h-3 w-3 items-center justify-center bg-error text-white text-[9px] rounded-full font-bold">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
             )}
           </button>
 
@@ -50,18 +54,23 @@ const Header: React.FC = () => {
             <div className="absolute right-0 mt-2 w-80 bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
               <div className="p-4 bg-surface-container-low border-b border-outline-variant flex justify-between items-center">
                 <p className="font-title-sm text-on-surface">Notifikasi</p>
-                <button className="text-primary text-xs hover:underline">Tandai semua dibaca</button>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); markAllAsRead(); }}
+                  className="text-primary text-xs hover:underline"
+                >
+                  Tandai semua dibaca
+                </button>
               </div>
               <div className="max-h-[400px] overflow-y-auto">
                 {notifications.length > 0 ? (
                   notifications.map((notif) => (
-                    <div key={notif.id} className="p-4 border-b border-outline-variant last:border-0 hover:bg-surface-container-low transition-colors cursor-pointer">
+                    <div key={`${notif.type}-${notif.id}`} className={`p-4 border-b border-outline-variant last:border-0 hover:bg-surface-container-low transition-colors cursor-pointer ${!notif.isRead ? 'bg-primary/5' : ''}`}>
                       <div className="flex gap-3">
                         <div className={`w-2 h-2 mt-2 rounded-full shrink-0 ${
                           notif.type === 'error' ? 'bg-error' : notif.type === 'warning' ? 'bg-warning' : 'bg-primary'
                         }`}></div>
                         <div className="flex-1">
-                          <p className="font-title-sm text-[13px] text-on-surface mb-0.5">{notif.title}</p>
+                          <p className={`font-title-sm text-[13px] text-on-surface mb-0.5 ${!notif.isRead ? 'font-bold' : ''}`}>{notif.title}</p>
                           <p className="font-body-sm text-[12px] text-secondary leading-tight">{notif.message}</p>
                           <p className="text-[10px] text-outline mt-1">{notif.time}</p>
                         </div>
@@ -70,17 +79,13 @@ const Header: React.FC = () => {
                   ))
                 ) : (
                   <div className="p-8 text-center text-secondary italic text-sm">
-                    Tidak ada notifikasi baru
+                    Tidak ada aktivitas terbaru
                   </div>
                 )}
               </div>
             </div>
           )}
         </div>
-
-        <button className="p-2 hover:bg-surface-container rounded-full text-on-surface-variant transition-colors">
-          <span className="material-symbols-outlined">help_outline</span>
-        </button>
 
         <div className="h-8 w-px bg-outline-variant mx-2"></div>
 
@@ -96,7 +101,7 @@ const Header: React.FC = () => {
               {displayName}
             </p>
             <p className="text-[11px] text-secondary leading-none uppercase tracking-tighter">
-              {profile?.role || 'Staff / Kasir'}
+              {profile?.role || 'Staff Gudang / Kasir'}
             </p>
           </div>
         </Link>

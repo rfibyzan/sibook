@@ -10,7 +10,7 @@ const SettingsPage: React.FC = () => {
   const { showAlert, showConfirm } = useNotification();
   const [fullName, setFullName] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
-  const [role, setRole] = useState('Staff');
+  const [role, setRole] = useState('Staff Gudang');
   const [isLoading, setIsLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' });
@@ -27,7 +27,7 @@ const SettingsPage: React.FC = () => {
     if (profile) {
       setFullName(profile.full_name || '');
       setAvatarUrl(profile.avatar_url || '');
-      setRole(profile.role || 'Staff');
+      setRole(profile.role || 'Staff Gudang');
     }
   }, [profile]);
 
@@ -249,7 +249,7 @@ const SettingsPage: React.FC = () => {
                     <option value="Owner">Owner</option>
                     <option value="Manager">Manager</option>
                     <option value="Kasir">Kasir</option>
-                    <option value="Staff">Staff</option>
+                    <option value="Staff Gudang">Staff Gudang</option>
                   </select>
                 </div>
 

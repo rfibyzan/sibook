@@ -10,8 +10,8 @@ interface SaleItem {
   id: string; // book id
   isbn: string;
   judul: string;
-  quantity: number;
-  harga_jual: number;
+  quantity: number | '';
+  harga_jual: number | '';
 }
 
 const StockOutPage: React.FC = () => {
@@ -59,16 +59,17 @@ const StockOutPage: React.FC = () => {
     return value.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
   };
 
-  const parseNumber = (str: string, max: number) => {
+  const parseNumber = (str: string, max: number): number | '' => {
+    if (str === '') return '';
     let val = parseInt(str.replace(/\./g, '')) || 0;
     if (val > max) {
       showAlert(`Maksimal stok tersedia: ${max} pcs`, 'warning');
       return max;
     }
-    return Math.max(1, val);
+    return Math.max(0, val);
   };
 
-  const updateQuantity = (id: string, newQty: number) => {
+  const updateQuantity = (id: string, newQty: number | '') => {
     setCart(cart.map(item => item.id === id ? { ...item, quantity: newQty } : item));
   };
 
@@ -76,7 +77,7 @@ const StockOutPage: React.FC = () => {
     setCart(cart.filter(item => item.id !== id));
   };
 
-  const subtotal = cart.reduce((sum, item) => sum + (item.quantity * item.harga_jual), 0);
+  const subtotal = cart.reduce((sum, item) => sum + ((typeof item.quantity === 'number' ? item.quantity : 0) * (typeof item.harga_jual === 'number' ? item.harga_jual : 0)), 0);
   const tax = subtotal * 0.11;
   const total = subtotal + tax;
 
@@ -89,8 +90,8 @@ const StockOutPage: React.FC = () => {
       .from('transaksi_keluar') as any)
       .insert({
         id_user: user?.id || null,
-        total_item: 0,
-        total_harga: 0,
+        total_item: cart.reduce((sum, item) => sum + (typeof item.quantity === 'number' ? item.quantity : 0), 0),
+        total_harga: cart.reduce((sum, item) => sum + ((typeof item.quantity === 'number' ? item.quantity : 0) * (typeof item.harga_jual === 'number' ? item.harga_jual : 0)), 0),
         catatan: catatan || null
       } as any)
       .select()
@@ -106,8 +107,8 @@ const StockOutPage: React.FC = () => {
     const itemsToInsert = cart.map(item => ({
       id_transaksi_keluar: (transData as any).id,
       id_buku: item.id,
-      jumlah_keluar: item.quantity,
-      harga_jual: item.harga_jual
+      jumlah_keluar: typeof item.quantity === 'number' ? item.quantity : 1,
+      harga_jual: typeof item.harga_jual === 'number' ? item.harga_jual : 0
     }));
 
     const { error: itemsError } = await (supabase
@@ -226,14 +227,15 @@ const StockOutPage: React.FC = () => {
                             <input 
                               type="text"
                               className="w-full h-10 bg-transparent text-center font-bold text-on-surface outline-none"
-                              value={formatNumber(item.quantity)}
+                              value={item.quantity === '' ? '' : formatNumber(item.quantity)}
                               onChange={(e) => updateQuantity(item.id, parseNumber(e.target.value, original?.stok_saat_ini || 0))}
+                              onBlur={() => { if (item.quantity === '' || item.quantity === 0) updateQuantity(item.id, 1) }}
                             />
                             <span className="text-[10px] text-secondary font-bold ml-1">PCS</span>
                           </div>
                         </td>
-                        <td className="px-8 py-6 text-right font-data-tabular text-on-surface">Rp {item.harga_jual.toLocaleString()}</td>
-                        <td className="px-8 py-6 text-right font-data-tabular text-on-surface font-bold">Rp {(item.quantity * item.harga_jual).toLocaleString()}</td>
+                        <td className="px-8 py-6 text-right font-data-tabular text-on-surface">Rp {(typeof item.harga_jual === 'number' ? item.harga_jual : 0).toLocaleString()}</td>
+                        <td className="px-8 py-6 text-right font-data-tabular text-on-surface font-bold">Rp {((typeof item.quantity === 'number' ? item.quantity : 0) * (typeof item.harga_jual === 'number' ? item.harga_jual : 0)).toLocaleString()}</td>
                         <td className="px-8 py-6 text-center">
                           <button onClick={() => removeFromCart(item.id)} className="p-2 text-outline hover:bg-error/10 hover:text-error rounded-full transition-all">
                             <span className="material-symbols-outlined text-[20px]">delete</span>

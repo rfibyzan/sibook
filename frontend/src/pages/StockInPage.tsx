@@ -10,8 +10,8 @@ interface RestockItem {
   id: string;
   judul: string;
   isbn: string;
-  quantity: number;
-  harga_beli: number;
+  quantity: number | '';
+  harga_beli: number | '';
 }
 
 const StockInPage: React.FC = () => {
@@ -65,19 +65,21 @@ const StockInPage: React.FC = () => {
     return value.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
   };
 
-  const parseNumber = (str: string) => {
-    return Math.max(1, parseInt(str.replace(/\./g, '')) || 0);
+  const parseNumber = (str: string): number | '' => {
+    if (str === '') return '';
+    return Math.max(0, parseInt(str.replace(/\./g, '')) || 0);
   };
 
-  const parsePrice = (str: string) => {
-    return parseInt(str.replace(/\./g, '')) || 0;
+  const parsePrice = (str: string): number | '' => {
+    if (str === '') return '';
+    return Math.max(0, parseInt(str.replace(/\./g, '')) || 0);
   };
 
-  const updateQuantity = (id: string, newQty: number) => {
+  const updateQuantity = (id: string, newQty: number | '') => {
     setCart(cart.map(item => item.id === id ? { ...item, quantity: newQty } : item));
   };
 
-  const updateHargaBeli = (id: string, harga: number) => {
+  const updateHargaBeli = (id: string, harga: number | '') => {
     setCart(cart.map(item => item.id === id ? { ...item, harga_beli: harga } : item));
   };
 
@@ -108,7 +110,8 @@ const StockInPage: React.FC = () => {
       for (const item of cart) {
         const book = availableBooks.find(b => b.id === item.id);
         if (book?.id_rak) {
-          addedPerRak[book.id_rak] = (addedPerRak[book.id_rak] || 0) + item.quantity;
+          const qty = typeof item.quantity === 'number' ? item.quantity : 0;
+          addedPerRak[book.id_rak] = (addedPerRak[book.id_rak] || 0) + qty;
         }
       }
 
@@ -154,7 +157,7 @@ const StockInPage: React.FC = () => {
         id_user: user?.id || null,
         no_po: noPo || null,
         catatan: catatan || null,
-        total_item: 0
+        total_item: cart.reduce((sum, item) => sum + (typeof item.quantity === 'number' ? item.quantity : 0), 0)
       } as any)
       .select()
       .single();
@@ -169,8 +172,8 @@ const StockInPage: React.FC = () => {
     const itemsToInsert = cart.map(item => ({
       id_transaksi_masuk: (transData as any).id,
       id_buku: item.id,
-      jumlah_masuk: item.quantity,
-      harga_beli: item.harga_beli
+      jumlah_masuk: typeof item.quantity === 'number' ? item.quantity : 1,
+      harga_beli: typeof item.harga_beli === 'number' ? item.harga_beli : 0
     }));
 
     const { error: itemsError } = await (supabase
@@ -279,8 +282,9 @@ const StockInPage: React.FC = () => {
                           <input 
                             type="text"
                             className="w-full h-10 bg-transparent text-center font-bold text-on-surface outline-none"
-                            value={formatNumber(item.quantity)}
+                            value={item.quantity === '' ? '' : formatNumber(item.quantity)}
                             onChange={(e) => updateQuantity(item.id, parseNumber(e.target.value))}
+                            onBlur={() => { if (item.quantity === '' || item.quantity === 0) updateQuantity(item.id, 1) }}
                           />
                           <span className="text-[10px] text-secondary font-bold ml-1">PCS</span>
                         </div>
@@ -289,12 +293,13 @@ const StockInPage: React.FC = () => {
                         <input 
                           type="text"
                           className="w-full h-10 px-3 bg-surface-container-low border border-outline-variant rounded-xl text-right font-mono text-on-surface outline-none focus:border-primary"
-                          value={formatNumber(item.harga_beli)}
+                          value={item.harga_beli === '' ? '' : formatNumber(item.harga_beli)}
                           onChange={(e) => updateHargaBeli(item.id, parsePrice(e.target.value))}
+                          onBlur={() => { if (item.harga_beli === '') updateHargaBeli(item.id, 0) }}
                         />
                       </td>
                       <td className="px-4 py-6 text-right font-data-tabular text-on-surface font-bold">
-                        Rp {(item.quantity * item.harga_beli).toLocaleString()}
+                        Rp {((typeof item.quantity === 'number' ? item.quantity : 0) * (typeof item.harga_beli === 'number' ? item.harga_beli : 0)).toLocaleString()}
                       </td>
                       <td className="px-4 py-6 text-right">
                         <button onClick={() => removeFromCart(item.id)} className="p-2 text-outline hover:bg-error/10 hover:text-error rounded-full transition-all">
@@ -378,13 +383,13 @@ const StockInPage: React.FC = () => {
               <div className="flex justify-between items-center bg-surface-container-low p-4 rounded-2xl">
                 <span className="text-xs font-label-uppercase text-secondary tracking-wider">Total Qty</span>
                 <span className="text-on-surface font-bold text-primary">
-                  {formatNumber(cart.reduce((sum, item) => sum + item.quantity, 0))} Pcs
+                  {formatNumber(cart.reduce((sum, item) => sum + (typeof item.quantity === 'number' ? item.quantity : 0), 0))} Pcs
                 </span>
               </div>
               <div className="flex justify-between items-center bg-surface-container-low p-4 rounded-2xl">
                 <span className="text-xs font-label-uppercase text-secondary tracking-wider">Total Biaya</span>
                 <span className="text-on-surface font-bold text-primary">
-                  Rp {cart.reduce((sum, item) => sum + (item.quantity * item.harga_beli), 0).toLocaleString()}
+                  Rp {cart.reduce((sum, item) => sum + ((typeof item.quantity === 'number' ? item.quantity : 0) * (typeof item.harga_beli === 'number' ? item.harga_beli : 0)), 0).toLocaleString()}
                 </span>
               </div>
             </div>
