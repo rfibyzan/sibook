@@ -9,6 +9,8 @@ const LowStockPanel: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    let mounted = true;
+
     const fetchLowStock = async () => {
       const { data } = await supabase
         .from('buku')
@@ -17,11 +19,64 @@ const LowStockPanel: React.FC = () => {
         .order('stok_saat_ini', { ascending: true })
         .limit(15);
 
+      if (!mounted) return;
       if (data) setLowStockBooks(data as Buku[]);
       setLoading(false);
     };
 
     fetchLowStock();
+
+    const applyRowChange = (type: 'INSERT' | 'UPDATE' | 'DELETE', row: any) => {
+      console.debug('[LowStockPanel] applyRowChange', type, row);
+      if (!row) return;
+      setLowStockBooks(prev => {
+        const id = row.id as string;
+        const withinThreshold = typeof row.stok_saat_ini === 'number' ? row.stok_saat_ini <= 5 : false;
+
+        if (type === 'DELETE') return prev.filter(b => b.id !== id);
+
+        const exists = prev.find(b => b.id === id);
+        if (exists) {
+          if (!withinThreshold) return prev.filter(b => b.id !== id);
+          return prev.map(b => (b.id === id ? row : b)).sort((a, b) => a.stok_saat_ini - b.stok_saat_ini).slice(0, 15);
+        } else {
+          if (withinThreshold) return [row, ...prev].sort((a, b) => a.stok_saat_ini - b.stok_saat_ini).slice(0, 15);
+          return prev;
+        }
+      });
+    };
+
+    const channel = supabase.channel('realtime-buku')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'buku' },
+        (payload) => {
+          console.debug('[LowStockPanel] INSERT payload', payload);
+          applyRowChange('INSERT', payload.new);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'buku' },
+        (payload) => {
+          console.debug('[LowStockPanel] UPDATE payload', payload);
+          applyRowChange('UPDATE', payload.new);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'buku' },
+        (payload) => {
+          console.debug('[LowStockPanel] DELETE payload', payload);
+          applyRowChange('DELETE', payload.old);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      mounted = false;
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const shouldScroll = lowStockBooks.length > 5;
