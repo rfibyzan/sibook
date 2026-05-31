@@ -23,7 +23,7 @@ const SalesChart: React.FC<SalesChartProps> = ({
   dateError 
 }) => {
   return (
-    <div className="bg-surface-container-lowest border border-outline-variant rounded-[32px] p-8 shadow-sm flex flex-col min-h-[460px]">
+    <div className="bg-surface-container-lowest border border-outline-variant rounded-[32px] p-8 shadow-sm flex flex-col min-h-0 h-full">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div>
           <h3 className="font-title-lg text-on-surface">Tren Statistik</h3>

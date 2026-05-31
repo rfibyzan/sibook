@@ -174,9 +174,9 @@ const DashboardPage: React.FC = () => {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-gutter items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-gutter items-stretch min-h-0">
         {/* Main Chart Section */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 h-full min-h-0">
           <SalesChart 
             data={salesData} 
             chartType={chartType}
@@ -190,7 +190,7 @@ const DashboardPage: React.FC = () => {
         </div>
 
         {/* Side Panel: Notifications/Low Stock Alerts */}
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 h-full min-h-0 overflow-hidden">
           <LowStockPanel />
         </div>
       </div>

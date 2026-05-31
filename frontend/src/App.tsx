@@ -33,19 +33,44 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// Role-based Protected Route: redirect to /dashboard if role not allowed
+function RoleProtectedRoute({ children, allowedRoles }: { children: React.ReactNode; allowedRoles: string[] }) {
+  const { session, loading, profile } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-surface">
+        <div className="text-center">
+          <span className="material-symbols-outlined text-primary text-5xl animate-spin">progress_activity</span>
+          <p className="mt-4 font-body-md text-secondary">Memuat...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!session) return <Navigate to="/login" replace />;
+
+  const userRole = profile?.role || 'Staff Gudang';
+  if (!allowedRoles.includes(userRole)) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <>{children}</>;
+}
+
 function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-      <Route path="/books" element={<ProtectedRoute><BookManagementPage /></ProtectedRoute>} />
-      <Route path="/stock-in" element={<ProtectedRoute><StockInPage /></ProtectedRoute>} />
-      <Route path="/stock-out" element={<ProtectedRoute><StockOutPage /></ProtectedRoute>} />
-      <Route path="/categories" element={<ProtectedRoute><CategoriesPage /></ProtectedRoute>} />
-      <Route path="/locations" element={<ProtectedRoute><LocationsPage /></ProtectedRoute>} />
-      <Route path="/suppliers" element={<ProtectedRoute><SuppliersPage /></ProtectedRoute>} />
-      <Route path="/users" element={<ProtectedRoute><UsersPage /></ProtectedRoute>} />
-      <Route path="/reports" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
+      <Route path="/books" element={<RoleProtectedRoute allowedRoles={['Owner', 'Manager', 'Staff Gudang']}><BookManagementPage /></RoleProtectedRoute>} />
+      <Route path="/stock-in" element={<RoleProtectedRoute allowedRoles={['Owner', 'Manager', 'Staff Gudang']}><StockInPage /></RoleProtectedRoute>} />
+      <Route path="/stock-out" element={<RoleProtectedRoute allowedRoles={['Owner', 'Manager', 'Kasir']}><StockOutPage /></RoleProtectedRoute>} />
+      <Route path="/categories" element={<RoleProtectedRoute allowedRoles={['Owner', 'Manager', 'Staff Gudang']}><CategoriesPage /></RoleProtectedRoute>} />
+      <Route path="/locations" element={<RoleProtectedRoute allowedRoles={['Owner', 'Manager', 'Staff Gudang']}><LocationsPage /></RoleProtectedRoute>} />
+      <Route path="/suppliers" element={<RoleProtectedRoute allowedRoles={['Owner', 'Manager', 'Staff Gudang']}><SuppliersPage /></RoleProtectedRoute>} />
+      <Route path="/users" element={<RoleProtectedRoute allowedRoles={['Owner', 'Manager']}><UsersPage /></RoleProtectedRoute>} />
+      <Route path="/reports" element={<RoleProtectedRoute allowedRoles={['Owner', 'Manager', 'Staff Gudang', 'Kasir']}><ReportsPage /></RoleProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
