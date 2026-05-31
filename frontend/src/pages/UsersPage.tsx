@@ -116,10 +116,10 @@ const UsersPage: React.FC = () => {
     if (!editingProfile) return;
     setIsSubmitting(true);
 
-    const { error } = await (supabase
-      .from('profiles') as any)
-      .update({ role: editingProfile.role })
-      .eq('id', editingProfile.id);
+    const { error } = await supabase.rpc('update_user_role', {
+      target_user_id: editingProfile.id,
+      new_role: editingProfile.role
+    });
 
     if (!error) {
       showAlert('Jabatan berhasil diperbarui.', 'success');
@@ -144,11 +144,9 @@ const UsersPage: React.FC = () => {
       type: 'danger',
       onConfirm: async () => {
         setLoading(true);
-        const { data, error } = await (supabase
-          .from('profiles') as any)
-          .delete()
-          .eq('id', id)
-          .select();
+        const { error } = await supabase.rpc('delete_user', {
+          target_user_id: id
+        });
         
         if (error) {
           showAlert('Gagal menghapus: ' + error.message, 'error');
