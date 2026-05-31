@@ -14,7 +14,7 @@ interface TransaksiMasukRecord {
   dibuat_pada: string;
   tanggal_masuk: string;
   supplier: { nama: string } | null;
-  detail_masuk: { jumlah_masuk: number; harga_beli: number; id_buku: string }[];
+  detail_masuk: { jumlah_masuk: number; harga_beli: number; id_buku: string; buku?: { judul: string; pengarang: string } }[];
 }
 
 interface TransaksiKeluarRecord {
@@ -25,7 +25,7 @@ interface TransaksiKeluarRecord {
   catatan: string | null;
   dibuat_pada: string;
   tanggal_keluar: string;
-  detail_keluar: { jumlah_keluar: number; harga_jual: number; id_buku: string }[];
+  detail_keluar: { jumlah_keluar: number; harga_jual: number; id_buku: string; buku?: { judul: string; pengarang: string } }[];
 }
 
 type CombinedRecord = {
@@ -38,6 +38,14 @@ type CombinedRecord = {
   totalQty: number;
   totalAmount: number;
   catatan: string | null;
+  details: {
+    id_buku: string;
+    judul: string;
+    pengarang: string;
+    qty: number;
+    price: number;
+    subtotal: number;
+  }[];
 };
 
 interface BestSellerRecord {
@@ -103,6 +111,9 @@ const ReportsPage: React.FC = () => {
   const [bookMap, setBookMap] = useState<Record<string, { judul: string; pengarang: string; harga_jual: number }>>({});
   const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
 
+  // Modal State for Transaction Details
+  const [selectedTransaction, setSelectedTransaction] = useState<CombinedRecord | null>(null);
+
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -121,8 +132,8 @@ const ReportsPage: React.FC = () => {
         supabase.from('profiles').select('id, full_name'),
         supabase.from('kategori').select('id, nama_kategori'),
         supabase.from('buku').select('id, isbn, judul, pengarang, stok_saat_ini, stok_minimum, harga_jual, id_kategori'),
-        supabase.from('transaksi_masuk').select('*, supplier (nama), detail_masuk (jumlah_masuk, harga_beli, id_buku)').order('dibuat_pada', { ascending: false }),
-        supabase.from('transaksi_keluar').select('*, detail_keluar (jumlah_keluar, harga_jual, id_buku)').order('dibuat_pada', { ascending: false })
+        supabase.from('transaksi_masuk').select('*, supplier (nama), detail_masuk (jumlah_masuk, harga_beli, id_buku, buku (judul, pengarang))').order('dibuat_pada', { ascending: false }),
+        supabase.from('transaksi_keluar').select('*, detail_keluar (jumlah_keluar, harga_jual, id_buku, buku (judul, pengarang))').order('dibuat_pada', { ascending: false })
       ]);
 
       const profileMap: Record<string, string> = {};
@@ -161,6 +172,16 @@ const ReportsPage: React.FC = () => {
         const qty = t.detail_masuk?.reduce((sum, d) => sum + (d.jumlah_masuk || 0), 0) || 0;
         const amount = t.detail_masuk?.reduce((sum, d) => sum + (d.jumlah_masuk * d.harga_beli || 0), 0) || 0;
         restockQty += qty;
+        
+        const details = (t.detail_masuk || []).map(d => ({
+          id_buku: d.id_buku,
+          judul: d.buku?.judul || bookMap[d.id_buku]?.judul || 'Buku Dihapus/Tidak Dikenal',
+          pengarang: d.buku?.pengarang || bookMap[d.id_buku]?.pengarang || '-',
+          qty: d.jumlah_masuk || 0,
+          price: d.harga_beli || 0,
+          subtotal: (d.jumlah_masuk || 0) * (d.harga_beli || 0)
+        }));
+
         return {
           id: t.id,
           type: 'masuk' as const,
@@ -170,7 +191,8 @@ const ReportsPage: React.FC = () => {
           user: t.id_user ? (profileMap[t.id_user] || 'User') : 'System',
           totalQty: qty,
           totalAmount: amount,
-          catatan: t.catatan
+          catatan: t.catatan,
+          details
         };
       });
 
@@ -180,6 +202,16 @@ const ReportsPage: React.FC = () => {
         const amount = t.total_harga || t.detail_keluar?.reduce((sum, d) => sum + (d.jumlah_keluar * d.harga_jual || 0), 0) || 0;
         revenue += amount;
         soldQty += qty;
+
+        const details = (t.detail_keluar || []).map(d => ({
+          id_buku: d.id_buku,
+          judul: d.buku?.judul || bookMap[d.id_buku]?.judul || 'Buku Dihapus/Tidak Dikenal',
+          pengarang: d.buku?.pengarang || bookMap[d.id_buku]?.pengarang || '-',
+          qty: d.jumlah_keluar || 0,
+          price: d.harga_jual || bookMap[d.id_buku]?.harga_jual || 0,
+          subtotal: (d.jumlah_keluar || 0) * (d.harga_jual || bookMap[d.id_buku]?.harga_jual || 0)
+        }));
+
         return {
           id: t.id,
           type: 'keluar' as const,
@@ -189,7 +221,8 @@ const ReportsPage: React.FC = () => {
           user: t.id_user ? (profileMap[t.id_user] || 'User') : 'System',
           totalQty: qty,
           totalAmount: amount,
-          catatan: t.catatan
+          catatan: t.catatan,
+          details
         };
       });
 
@@ -677,7 +710,12 @@ const ReportsPage: React.FC = () => {
               <input
                 type="date"
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                max={endDate || undefined}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setStartDate(val);
+                  if (endDate && val > endDate) setEndDate(val);
+                }}
                 className="w-full bg-surface-container-low border border-outline-variant rounded-xl px-4 py-2 text-body-md text-on-surface focus:outline-none focus:border-primary transition-all"
               />
             </div>
@@ -688,7 +726,12 @@ const ReportsPage: React.FC = () => {
               <input
                 type="date"
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
+                min={startDate || undefined}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setEndDate(val);
+                  if (startDate && val < startDate) setStartDate(val);
+                }}
                 className="w-full bg-surface-container-low border border-outline-variant rounded-xl px-4 py-2 text-body-md text-on-surface focus:outline-none focus:border-primary transition-all"
               />
             </div>
@@ -761,7 +804,12 @@ const ReportsPage: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-outline-variant">
                 {currentRecords.map((trans) => (
-                  <tr key={trans.id} className="hover:bg-primary/[0.02] transition-colors">
+                  <tr 
+                    key={trans.id} 
+                    onClick={() => setSelectedTransaction(trans)}
+                    className="hover:bg-primary/[0.05] transition-colors cursor-pointer group"
+                    title="Klik untuk melihat detail"
+                  >
                     <td className="px-8 py-5 font-bold text-primary font-mono text-[13px]">
                       {trans.label}
                     </td>
@@ -1072,6 +1120,89 @@ const ReportsPage: React.FC = () => {
           {activeTab === 'stats' && renderStatsTab()}
           {activeTab === 'transactions' && renderTransactionsTab()}
           {activeTab === 'inventory' && renderInventoryTab()}
+        </div>
+      )}
+
+      {/* Transaction Details Modal */}
+      {selectedTransaction && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-surface-container-lowest w-full max-w-2xl rounded-[32px] shadow-2xl p-8 flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h3 className="font-headline-sm text-on-surface">Detail Transaksi {selectedTransaction.label}</h3>
+                <p className="text-secondary text-body-md mt-1">
+                  {new Date(selectedTransaction.dibuat_pada).toLocaleString('id-ID', {
+                    day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                  })}
+                  {' '} • Dikerjakan oleh {selectedTransaction.user}
+                </p>
+              </div>
+              <button onClick={() => setSelectedTransaction(null)} className="p-2 text-outline hover:bg-surface-container hover:text-on-surface rounded-full transition-colors">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto pr-2">
+              <table className="w-full text-left border-collapse">
+                <thead className="bg-surface-container-low border-b border-outline-variant sticky top-0 z-10">
+                  <tr>
+                    <th className="px-4 py-3 font-label-uppercase text-secondary text-[11px] tracking-widest">Judul Buku</th>
+                    <th className="px-4 py-3 font-label-uppercase text-secondary text-[11px] tracking-widest text-center">Qty</th>
+                    <th className="px-4 py-3 font-label-uppercase text-secondary text-[11px] tracking-widest text-right">Harga</th>
+                    <th className="px-4 py-3 font-label-uppercase text-secondary text-[11px] tracking-widest text-right">Subtotal</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-outline-variant">
+                  {selectedTransaction.details.map((detail, idx) => (
+                    <tr key={idx} className="hover:bg-primary/[0.02] transition-colors">
+                      <td className="px-4 py-4">
+                        <p className="font-bold text-on-surface text-sm">{detail.judul}</p>
+                        <p className="text-xs text-secondary">{detail.pengarang}</p>
+                      </td>
+                      <td className="px-4 py-4 text-center font-data-tabular">
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                          selectedTransaction.type === 'keluar' ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'
+                        }`}>
+                          {selectedTransaction.type === 'keluar' ? '-' : '+'}{detail.qty}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4 text-right font-data-tabular text-sm">
+                        Rp {detail.price.toLocaleString()}
+                      </td>
+                      <td className="px-4 py-4 text-right font-data-tabular text-sm font-bold text-on-surface">
+                        Rp {detail.subtotal.toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+                  {selectedTransaction.details.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="px-4 py-8 text-center text-secondary italic">
+                        Tidak ada detail item yang tersimpan untuk transaksi ini.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+              
+              {selectedTransaction.catatan && (
+                <div className="mt-6 bg-surface-container-low p-4 rounded-2xl border border-outline-variant">
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-secondary block mb-1">Catatan Transaksi:</span>
+                  <p className="text-body-sm text-on-surface">{selectedTransaction.catatan}</p>
+                </div>
+              )}
+            </div>
+            
+            <div className="mt-6 pt-6 border-t border-outline-variant flex justify-between items-center">
+              <div className="flex flex-col">
+                <span className="text-[11px] font-bold uppercase tracking-widest text-secondary">Total Item</span>
+                <span className="font-title-lg text-on-surface">{selectedTransaction.totalQty} pcs</span>
+              </div>
+              <div className="flex flex-col text-right">
+                <span className="text-[11px] font-bold uppercase tracking-widest text-secondary">Total Nominal</span>
+                <span className="font-headline-sm text-primary font-bold">Rp {selectedTransaction.totalAmount.toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </Layout>

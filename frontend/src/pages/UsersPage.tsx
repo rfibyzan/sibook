@@ -23,7 +23,7 @@ const rolePriority: Record<string, number> = {
 };
 
 const UsersPage: React.FC = () => {
-  const { showAlert, showConfirm } = useNotification();
+  const { showAlert, showConfirm, broadcastNotification } = useNotification();
   const { profile: currentUser } = useAuth();
   const [profiles, setProfiles] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -95,6 +95,11 @@ const UsersPage: React.FC = () => {
 
       if (signUpData.user) {
         showAlert('Staf baru berhasil didaftarkan!', 'success');
+        broadcastNotification(
+          'Staf Baru Ditambahkan',
+          `${currentUser?.full_name || 'Admin'} (${currentUser?.role || 'User'}) menambahkan staf baru "${newStaff.full_name}"`,
+          'info'
+        );
         setIsAddModalOpen(false);
         setNewStaff({ full_name: '', email: '', password: '', role: 'Staff Gudang' });
         setTimeout(() => fetchProfiles(), 1500);
@@ -118,6 +123,11 @@ const UsersPage: React.FC = () => {
 
     if (!error) {
       showAlert('Jabatan berhasil diperbarui.', 'success');
+      broadcastNotification(
+        'Jabatan Staf Diperbarui',
+        `${currentUser?.full_name || 'Admin'} (${currentUser?.role || 'User'}) mengubah jabatan "${editingProfile.full_name}" menjadi ${editingProfile.role}`,
+        'info'
+      );
       setIsEditModalOpen(false);
       fetchProfiles();
     } else {
@@ -144,6 +154,11 @@ const UsersPage: React.FC = () => {
           showAlert('Gagal menghapus: ' + error.message, 'error');
         } else {
           showAlert('User berhasil dihapus.', 'success');
+          broadcastNotification(
+            'Staf Dihapus',
+            `${currentUser?.full_name || 'Admin'} (${currentUser?.role || 'User'}) menghapus staf "${name}"`,
+            'warning'
+          );
           fetchProfiles();
         }
         setLoading(false);

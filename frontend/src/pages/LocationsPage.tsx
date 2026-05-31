@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
 import { useNotification } from '../context/NotificationContext';
+import { useAuth } from '../context/AuthContext';
 import type { Rak } from '../lib/types';
 import Pagination from '../components/Pagination';
 
@@ -10,7 +11,8 @@ interface RakWithBuku extends Rak {
 }
 
 const LocationsPage: React.FC = () => {
-  const { showAlert, showConfirm } = useNotification();
+  const { showAlert, showConfirm, broadcastNotification } = useNotification();
+  const { profile } = useAuth();
   const [locations, setLocations] = useState<RakWithBuku[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -59,6 +61,15 @@ const LocationsPage: React.FC = () => {
       setEditingLocationId(null);
       setNewLocation({ kode_rak: '', seksi: '', kapasitas: 0 });
       showAlert(editingLocationId ? 'Lokasi rak berhasil diperbarui!' : 'Lokasi rak berhasil ditambahkan!', 'success');
+      
+      const actionName = editingLocationId ? 'memperbarui' : 'menambahkan';
+      const titleName = editingLocationId ? 'Lokasi Rak Diperbarui' : 'Lokasi Rak Baru';
+      broadcastNotification(
+        titleName,
+        `${profile?.full_name || 'Admin'} (${profile?.role || 'User'}) ${actionName} rak "${newLocation.kode_rak}"`,
+        'info'
+      );
+
       fetchLocations();
     } else {
       const msg = error.message.includes('unique constraint') || error.message.includes('already exists')
@@ -84,6 +95,16 @@ const LocationsPage: React.FC = () => {
         const { error } = await supabase.from('rak').delete().eq('id', id);
         if (!error) {
           showAlert('Lokasi rak berhasil dihapus!', 'success');
+          
+          const deletedLoc = locations.find(l => l.id === id);
+          if (deletedLoc) {
+            broadcastNotification(
+              'Lokasi Rak Dihapus',
+              `${profile?.full_name || 'Admin'} (${profile?.role || 'User'}) menghapus rak "${deletedLoc.kode_rak}"`,
+              'warning'
+            );
+          }
+
           fetchLocations();
         } else {
           showAlert('Gagal menghapus lokasi: ' + error.message, 'error');

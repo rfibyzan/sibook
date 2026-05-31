@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
 
@@ -29,6 +29,8 @@ interface NotificationContextType {
   notifications: AppNotification[];
   unreadCount: number;
   markAllAsRead: () => void;
+  markAsRead: (id: string) => void;
+  broadcastNotification: (title: string, message: string, type?: NotificationType) => Promise<void>;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -38,7 +40,10 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [confirm, setConfirm] = useState<ConfirmOptions | null>(null);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const { session } = useAuth();
+  const { session, profile } = useAuth();
+  
+  // Track processed IDs to prevent double notifications in React Strict Mode
+  const processedIds = useRef<Set<string>>(new Set());
 
   const showAlert = useCallback((message: string, type: NotificationType = 'info') => {
     const id = Date.now();
@@ -63,10 +68,62 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
   };
 
+  const getReadNotifs = useCallback(() => {
+    if (!session?.user?.id) return new Set<string>();
+    const str = localStorage.getItem(`read_notifs_${session.user.id}`);
+    return str ? new Set<string>(JSON.parse(str)) : new Set<string>();
+  }, [session?.user?.id]);
+
+  const saveReadNotifs = useCallback((set: Set<string>) => {
+    if (!session?.user?.id) return;
+    const arr = Array.from(set).slice(-100); // keep max 100
+    localStorage.setItem(`read_notifs_${session.user.id}`, JSON.stringify(arr));
+  }, [session?.user?.id]);
+
   const markAllAsRead = useCallback(() => {
-    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+    setNotifications(prev => {
+      const readSet = getReadNotifs();
+      prev.forEach(n => readSet.add(n.id));
+      saveReadNotifs(readSet);
+      return prev.map(n => ({ ...n, isRead: true }));
+    });
     setUnreadCount(0);
-  }, []);
+  }, [getReadNotifs, saveReadNotifs]);
+
+  const markAsRead = useCallback((id: string) => {
+    setNotifications(prev => {
+      let isUnread = false;
+      const newNotifications = prev.map(n => {
+        if (n.id === id) {
+          if (!n.isRead) isUnread = true;
+          return { ...n, isRead: true };
+        }
+        return n;
+      });
+      if (isUnread) {
+        setUnreadCount(count => Math.max(0, count - 1));
+        const readSet = getReadNotifs();
+        readSet.add(id);
+        saveReadNotifs(readSet);
+      }
+      return newNotifications;
+    });
+  }, [getReadNotifs, saveReadNotifs]);
+
+  const broadcastNotification = useCallback(async (title: string, message: string, type: NotificationType = 'info') => {
+    if (!session?.user) return;
+    
+    await supabase.channel('app-notifications').send({
+      type: 'broadcast',
+      event: 'app-change',
+      payload: {
+        senderId: session.user.id,
+        title,
+        message,
+        type
+      }
+    });
+  }, [session]);
 
   const getTimeAgo = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -90,49 +147,64 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       try {
         const { data: masukData } = await supabase
           .from('transaksi_masuk')
-          .select('id, total_item, dibuat_pada, detail_masuk(buku(judul))')
+          .select('id, id_user, total_item, dibuat_pada, detail_masuk(jumlah_masuk, buku(judul))')
           .order('dibuat_pada', { ascending: false })
           .limit(5);
 
         const { data: keluarData } = await supabase
           .from('transaksi_keluar')
-          .select('id, total_item, dibuat_pada, detail_keluar(buku(judul))')
+          .select('id, id_user, total_item, dibuat_pada, detail_keluar(jumlah_keluar, buku(judul))')
           .order('dibuat_pada', { ascending: false })
           .limit(5);
 
         const items: AppNotification[] = [];
+        const readNotifs = getReadNotifs();
+        let unread = 0;
 
         (masukData || []).forEach((row: any) => {
           const judulBukuArray = row.detail_masuk?.map((d: any) => d.buku?.judul).filter(Boolean) || [];
           const judulText = judulBukuArray.length > 0 ? ` (${judulBukuArray.join(', ')})` : '';
+          const calculatedTotal = row.detail_masuk?.reduce((sum: number, d: any) => sum + (d.jumlah_masuk || 0), 0) || row.total_item;
+          
+          const isSender = row.id_user === session.user.id;
+          const isRead = isSender || readNotifs.has(row.id);
+          if (!isRead) unread++;
+
           items.push({
             id: row.id,
             type: 'success',
-            title: 'Buku Ditambahkan',
-            message: `${row.total_item} item ditambahkan ke stok${judulText}`,
+            title: 'Stok Masuk',
+            message: `${calculatedTotal} pcs stok ditambahkan${judulText}`,
             time: getTimeAgo(row.dibuat_pada),
             rawTime: row.dibuat_pada,
-            isRead: true, // initial load is considered read, or you could logic otherwise
+            isRead: isRead,
           });
         });
 
         (keluarData || []).forEach((row: any) => {
           const judulBukuArray = row.detail_keluar?.map((d: any) => d.buku?.judul).filter(Boolean) || [];
           const judulText = judulBukuArray.length > 0 ? ` (${judulBukuArray.join(', ')})` : '';
+          const calculatedTotal = row.detail_keluar?.reduce((sum: number, d: any) => sum + (d.jumlah_keluar || 0), 0) || row.total_item;
+          
+          const isSender = row.id_user === session.user.id;
+          const isRead = isSender || readNotifs.has(row.id);
+          if (!isRead) unread++;
+
           items.push({
             id: row.id,
             type: 'warning',
-            title: 'Buku Dikeluarkan',
-            message: `${row.total_item} item dikeluarkan dari stok${judulText}`,
+            title: 'Stok Keluar',
+            message: `${calculatedTotal} pcs stok dikeluarkan${judulText}`,
             time: getTimeAgo(row.dibuat_pada),
             rawTime: row.dibuat_pada,
-            isRead: true,
+            isRead: isRead,
           });
         });
 
         items.sort((a, b) => new Date(b.rawTime).getTime() - new Date(a.rawTime).getTime());
         if (mounted) {
           setNotifications(items.slice(0, 10));
+          setUnreadCount(unread);
         }
       } catch (error) {
         console.error('Error fetching activities', error);
@@ -147,30 +219,38 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         { event: 'INSERT', schema: 'public', table: 'transaksi_masuk' },
         (payload) => {
           const newId = payload.new.id as string;
+          if (processedIds.current.has(newId)) return;
+          processedIds.current.add(newId);
+          
           const totalItem = payload.new.total_item as number;
           
           setTimeout(async () => {
             const { data } = await supabase
               .from('transaksi_masuk')
-              .select('detail_masuk(buku(judul))')
+              .select('detail_masuk(jumlah_masuk, buku(judul))')
               .eq('id', newId)
               .single();
               
             const judulBukuArray = (data as any)?.detail_masuk?.map((d: any) => d.buku?.judul).filter(Boolean) || [];
             const judulText = judulBukuArray.length > 0 ? ` (${judulBukuArray.join(', ')})` : '';
+            const calculatedTotal = (data as any)?.detail_masuk?.reduce((sum: number, d: any) => sum + (d.jumlah_masuk || 0), 0) || totalItem;
+
+            const isSender = payload.new.id_user === session?.user?.id;
 
             const newNotif: AppNotification = {
               id: newId,
               type: 'success',
-              title: 'Buku Ditambahkan',
-              message: `${totalItem} item ditambahkan ke stok${judulText}`,
+              title: 'Stok Masuk',
+              message: `${calculatedTotal} pcs stok ditambahkan${judulText}`,
               time: 'Baru saja',
               rawTime: payload.new.dibuat_pada,
-              isRead: false,
+              isRead: isSender,
             };
             setNotifications(prev => [newNotif, ...prev].slice(0, 10));
-            setUnreadCount(prev => prev + 1);
-            showAlert(`${totalItem} buku baru saja ditambahkan ke stok.${judulText}`, 'success');
+            if (!isSender) {
+              setUnreadCount(prev => prev + 1);
+              showAlert(`${calculatedTotal} pcs stok baru saja ditambahkan.${judulText}`, 'success');
+            }
           }, 1000);
         }
       )
@@ -182,44 +262,80 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         { event: 'INSERT', schema: 'public', table: 'transaksi_keluar' },
         (payload) => {
           const newId = payload.new.id as string;
+          if (processedIds.current.has(newId)) return;
+          processedIds.current.add(newId);
+          
           const totalItem = payload.new.total_item as number;
           
           setTimeout(async () => {
             const { data } = await supabase
               .from('transaksi_keluar')
-              .select('detail_keluar(buku(judul))')
+              .select('detail_keluar(jumlah_keluar, buku(judul))')
               .eq('id', newId)
               .single();
               
             const judulBukuArray = (data as any)?.detail_keluar?.map((d: any) => d.buku?.judul).filter(Boolean) || [];
             const judulText = judulBukuArray.length > 0 ? ` (${judulBukuArray.join(', ')})` : '';
+            const calculatedTotal = (data as any)?.detail_keluar?.reduce((sum: number, d: any) => sum + (d.jumlah_keluar || 0), 0) || totalItem;
+
+            const isSender = payload.new.id_user === session?.user?.id;
 
             const newNotif: AppNotification = {
               id: newId,
               type: 'warning',
-              title: 'Buku Dikeluarkan',
-              message: `${totalItem} item dikeluarkan dari stok${judulText}`,
+              title: 'Stok Keluar',
+              message: `${calculatedTotal} pcs stok dikeluarkan${judulText}`,
               time: 'Baru saja',
               rawTime: payload.new.dibuat_pada,
-              isRead: false,
+              isRead: isSender,
             };
             setNotifications(prev => [newNotif, ...prev].slice(0, 10));
-            setUnreadCount(prev => prev + 1);
-            showAlert(`${totalItem} buku baru saja dikeluarkan dari stok.${judulText}`, 'warning');
+            if (!isSender) {
+              setUnreadCount(prev => prev + 1);
+              showAlert(`${calculatedTotal} pcs stok baru saja dikeluarkan.${judulText}`, 'warning');
+            }
           }, 1000);
         }
       )
+      .subscribe();
+
+    const broadcastChannel = supabase.channel('app-notifications')
+      .on('broadcast', { event: 'app-change' }, (payload) => {
+        const data = payload.payload;
+        // Broadcasts don't have a unique ID by default, let's just use the timestamp they send
+        // or a random ID if not provided, but we can prevent double process by checking the message
+        // Actually, let's just allow it or use a simple debounce/tracker for broadcasts
+        if (data.senderId !== session.user.id) {
+          const notifId = data.title + data.message + data.time; // rough uniqueness
+          if (processedIds.current.has(notifId)) return;
+          processedIds.current.add(notifId);
+          
+          const newNotif: AppNotification = {
+            id: Date.now().toString() + Math.random().toString(),
+            type: data.type,
+            title: data.title,
+            message: data.message,
+            time: 'Baru saja',
+            rawTime: new Date().toISOString(),
+            isRead: false,
+          };
+          setNotifications(prev => [newNotif, ...prev].slice(0, 15));
+          setUnreadCount(prev => prev + 1);
+          showAlert(data.message, data.type);
+        }
+      })
       .subscribe();
 
     return () => {
       mounted = false;
       supabase.removeChannel(masukChannel);
       supabase.removeChannel(keluarChannel);
+      supabase.removeChannel(broadcastChannel);
     };
   }, [showAlert, session]);
 
   return (
-    <NotificationContext.Provider value={{ showAlert, showConfirm, notifications, unreadCount, markAllAsRead }}>
+    <NotificationContext.Provider value={{ showAlert, showConfirm, notifications, unreadCount, markAllAsRead, markAsRead, broadcastNotification }}>
       {children}
 
       {alert && (

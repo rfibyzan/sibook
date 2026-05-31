@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
 import { useNotification } from '../context/NotificationContext';
+import { useAuth } from '../context/AuthContext';
 import type { Kategori } from '../lib/types';
 
 const CategoriesPage: React.FC = () => {
-  const { showAlert, showConfirm } = useNotification();
+  const { showAlert, showConfirm, broadcastNotification } = useNotification();
+  const { profile } = useAuth();
   const [categories, setCategories] = useState<Kategori[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -43,6 +45,15 @@ const CategoriesPage: React.FC = () => {
       setEditingCategoryId(null);
       setNewCategory({ nama_kategori: '', deskripsi: '' });
       showAlert(editingCategoryId ? 'Kategori berhasil diperbarui!' : 'Kategori berhasil ditambahkan!', 'success');
+      
+      const actionName = editingCategoryId ? 'memperbarui' : 'menambahkan';
+      const titleName = editingCategoryId ? 'Kategori Diperbarui' : 'Kategori Baru';
+      broadcastNotification(
+        titleName,
+        `${profile?.full_name || 'Admin'} (${profile?.role || 'User'}) ${actionName} kategori "${newCategory.nama_kategori}"`,
+        'info'
+      );
+
       fetchCategories();
     } else {
       showAlert('Gagal menyimpan kategori: ' + error.message, 'error');
@@ -65,6 +76,16 @@ const CategoriesPage: React.FC = () => {
         const { error } = await supabase.from('kategori').delete().eq('id', id);
         if (!error) {
           showAlert('Kategori dihapus', 'success');
+          
+          const deletedCat = categories.find(c => c.id === id);
+          if (deletedCat) {
+            broadcastNotification(
+              'Kategori Dihapus',
+              `${profile?.full_name || 'Admin'} (${profile?.role || 'User'}) menghapus kategori "${deletedCat.nama_kategori}"`,
+              'warning'
+            );
+          }
+
           fetchCategories();
         } else {
           showAlert('Gagal menghapus: ' + error.message, 'error');

@@ -2,12 +2,15 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
+import TransactionDetailModal from './TransactionDetailModal';
 
 const Header: React.FC = () => {
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const { signOut, user, profile } = useAuth();
-  const { showConfirm, notifications, unreadCount, markAllAsRead } = useNotification();
+  const { showConfirm, notifications, unreadCount, markAllAsRead, markAsRead } = useNotification();
   const navigate = useNavigate();
+  const [selectedTxId, setSelectedTxId] = useState<string | null>(null);
+  const [selectedTxType, setSelectedTxType] = useState<'masuk' | 'keluar'>('masuk');
 
   const handleSignOut = () => {
     showConfirm({
@@ -30,6 +33,7 @@ const Header: React.FC = () => {
   const avatarUrl = profile?.avatar_url || "https://ui-avatars.com/api/?name=" + (displayName) + "&background=random";
 
   return (
+    <>
     <header className="h-16 bg-surface-container-lowest border-b border-outline-variant flex items-center justify-between px-6 sticky top-0 z-30 shadow-sm">
       <div className="flex items-center gap-4">
         <h2 className="font-title-lg text-title-lg text-on-surface m-0">Inventory Dashboard</h2>
@@ -63,20 +67,36 @@ const Header: React.FC = () => {
               </div>
               <div className="max-h-[400px] overflow-y-auto">
                 {notifications.length > 0 ? (
-                  notifications.map((notif) => (
-                    <div key={`${notif.type}-${notif.id}`} className={`p-4 border-b border-outline-variant last:border-0 hover:bg-surface-container-low transition-colors cursor-pointer ${!notif.isRead ? 'bg-primary/5' : ''}`}>
-                      <div className="flex gap-3">
-                        <div className={`w-2 h-2 mt-2 rounded-full shrink-0 ${
-                          notif.type === 'error' ? 'bg-error' : notif.type === 'warning' ? 'bg-warning' : 'bg-primary'
-                        }`}></div>
-                        <div className="flex-1">
-                          <p className={`font-title-sm text-[13px] text-on-surface mb-0.5 ${!notif.isRead ? 'font-bold' : ''}`}>{notif.title}</p>
-                          <p className="font-body-sm text-[12px] text-secondary leading-tight">{notif.message}</p>
-                          <p className="text-[10px] text-outline mt-1">{notif.time}</p>
+                  notifications.map((notif) => {
+                    const isTransaction = notif.title === 'Stok Masuk' || notif.title === 'Stok Keluar';
+                    const txType = notif.title === 'Stok Keluar' ? 'keluar' : 'masuk';
+
+                    return (
+                      <div 
+                        key={`${notif.type}-${notif.id}`} 
+                        onClick={() => {
+                          markAsRead(notif.id);
+                          if (isTransaction) {
+                            setSelectedTxId(notif.id);
+                            setSelectedTxType(txType);
+                            setIsNotifOpen(false);
+                          }
+                        }}
+                        className={`p-4 border-b border-outline-variant last:border-0 transition-colors ${isTransaction ? 'cursor-pointer hover:bg-surface-container-low' : ''} ${!notif.isRead ? 'bg-primary/[0.08] border-l-4 border-l-primary' : 'border-l-4 border-l-transparent'}`}
+                      >
+                        <div className="flex gap-3">
+                          <div className={`w-2 h-2 mt-2 rounded-full shrink-0 ${
+                            notif.type === 'error' ? 'bg-error' : notif.type === 'warning' ? 'bg-warning' : 'bg-primary'
+                          }`}></div>
+                          <div className="flex-1">
+                            <p className={`font-title-sm text-[13px] text-on-surface mb-0.5 ${!notif.isRead ? 'font-bold' : ''}`}>{notif.title}</p>
+                            <p className="font-body-sm text-[12px] text-secondary leading-tight">{notif.message}</p>
+                            <p className="text-[10px] text-outline mt-1">{notif.time}</p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <div className="p-8 text-center text-secondary italic text-sm">
                     Tidak ada aktivitas terbaru
@@ -117,6 +137,14 @@ const Header: React.FC = () => {
       </div>
 
     </header>
+    {selectedTxId && (
+      <TransactionDetailModal
+        transactionId={selectedTxId}
+        type={selectedTxType}
+        onClose={() => setSelectedTxId(null)}
+      />
+    )}
+    </>
   );
 };
 

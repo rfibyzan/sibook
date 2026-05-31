@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
 import { useNotification } from '../context/NotificationContext';
+import { useAuth } from '../context/AuthContext';
 import type { Supplier } from '../lib/types';
 import Pagination from '../components/Pagination';
 
 const SuppliersPage: React.FC = () => {
-  const { showAlert, showConfirm } = useNotification();
+  const { showAlert, showConfirm, broadcastNotification } = useNotification();
+  const { profile } = useAuth();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -57,6 +59,15 @@ const SuppliersPage: React.FC = () => {
       setEditingSupplierId(null);
       setNewSupplier({ nama: '', telepon: '', alamat: '', email: '' });
       showAlert(editingSupplierId ? 'Supplier berhasil diperbarui!' : 'Supplier berhasil ditambahkan!', 'success');
+      
+      const actionName = editingSupplierId ? 'memperbarui' : 'menambahkan';
+      const titleName = editingSupplierId ? 'Supplier Diperbarui' : 'Supplier Baru';
+      broadcastNotification(
+        titleName,
+        `${profile?.full_name || 'Admin'} (${profile?.role || 'User'}) ${actionName} supplier "${newSupplier.nama}"`,
+        'info'
+      );
+
       fetchSuppliers();
     } else {
       showAlert('Gagal menyimpan supplier: ' + error.message, 'error');
@@ -84,6 +95,16 @@ const SuppliersPage: React.FC = () => {
         const { error } = await supabase.from('supplier').delete().eq('id', id);
         if (!error) {
           showAlert('Supplier berhasil dihapus', 'success');
+          
+          const deletedSup = suppliers.find(s => s.id === id);
+          if (deletedSup) {
+            broadcastNotification(
+              'Supplier Dihapus',
+              `${profile?.full_name || 'Admin'} (${profile?.role || 'User'}) menghapus supplier "${deletedSup.nama}"`,
+              'warning'
+            );
+          }
+
           fetchSuppliers();
         } else {
           showAlert('Gagal menghapus supplier: ' + error.message, 'error');

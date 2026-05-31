@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
 import { useNotification } from '../context/NotificationContext';
+import { useAuth } from '../context/AuthContext';
 import type { Buku, Kategori, Rak, Supplier } from '../lib/types';
 import Pagination from '../components/Pagination';
 
 const BookManagementPage: React.FC = () => {
-  const { showAlert, showConfirm } = useNotification();
+  const { showAlert, showConfirm, broadcastNotification } = useNotification();
+  const { profile } = useAuth();
   const [books, setBooks] = useState<Buku[]>([]);
   const [categories, setCategories] = useState<Kategori[]>([]);
   const [locations, setLocations] = useState<Rak[]>([]);
@@ -110,6 +112,15 @@ const BookManagementPage: React.FC = () => {
       setLocSearch('');
       setSupSearch('');
       showAlert(editingBookId ? 'Buku berhasil diperbarui!' : 'Buku berhasil ditambahkan!', 'success');
+      
+      const actionName = editingBookId ? 'memperbarui' : 'menambahkan';
+      const titleName = editingBookId ? 'Buku Diperbarui' : 'Buku Baru';
+      broadcastNotification(
+        titleName,
+        `${profile?.full_name || 'Admin'} (${profile?.role || 'User'}) ${actionName} buku "${newBook.judul}"`,
+        'info'
+      );
+
       fetchData();
     } else {
       showAlert('Gagal menyimpan data: ' + error.message, 'error');
@@ -150,6 +161,16 @@ const BookManagementPage: React.FC = () => {
         const { error } = await supabase.from('buku').delete().eq('id', id);
         if (!error) {
           showAlert('Buku telah dihapus', 'success');
+          
+          const deletedBook = books.find(b => b.id === id);
+          if (deletedBook) {
+            broadcastNotification(
+              'Buku Dihapus',
+              `${profile?.full_name || 'Admin'} (${profile?.role || 'User'}) menghapus buku "${deletedBook.judul}"`,
+              'warning'
+            );
+          }
+
           fetchData();
         } else {
           showAlert('Gagal menghapus: ' + error.message, 'error');
