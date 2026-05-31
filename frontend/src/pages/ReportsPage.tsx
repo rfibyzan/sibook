@@ -123,6 +123,34 @@ const ReportsPage: React.FC = () => {
     fetchReportData();
   }, []);
 
+  // Realtime subscriptions: re-fetch reports when relevant tables change
+  useEffect(() => {
+    const channel = supabase.channel('realtime-reports')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'transaksi_masuk' }, (payload) => {
+        console.debug('[ReportsPage] transaksi_masuk change', payload);
+        fetchReportData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'transaksi_keluar' }, (payload) => {
+        console.debug('[ReportsPage] transaksi_keluar change', payload);
+        fetchReportData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'detail_masuk' }, (payload) => {
+        console.debug('[ReportsPage] detail_masuk change', payload);
+        fetchReportData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'detail_keluar' }, (payload) => {
+        console.debug('[ReportsPage] detail_keluar change', payload);
+        fetchReportData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'buku' }, (payload) => {
+        console.debug('[ReportsPage] buku change', payload);
+        fetchReportData();
+      })
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
+  }, []);
+
   const fetchReportData = async () => {
     setLoading(true);
 

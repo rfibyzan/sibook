@@ -35,6 +35,27 @@ const DashboardPage: React.FC = () => {
     loadMetrics();
   }, []);
 
+  // Realtime subscriptions to keep metrics up-to-date
+  useEffect(() => {
+    const channel = supabase.channel('realtime-dashboard')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'buku' }, (payload) => {
+        console.debug('[DashboardPage] buku change', payload);
+        // Re-fetch counts when buku changes (insert/update/delete)
+        fetchDashboardData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'transaksi_keluar' }, (payload) => {
+        console.debug('[DashboardPage] transaksi_keluar change', payload);
+        // Update dashboard metrics and sales chart when transactions change
+        fetchDashboardData();
+        fetchSalesChartData();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [startDate, endDate]);
+
   // Effect specifically for chart data
   useEffect(() => {
     fetchSalesChartData();
