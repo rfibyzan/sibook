@@ -87,7 +87,11 @@ const pageInfo = [
   },
 ];
 
-const Header: React.FC = () => {
+interface HeaderProps {
+  onMenuToggle?: () => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const { signOut, user, profile } = useAuth();
@@ -148,12 +152,21 @@ const Header: React.FC = () => {
 
   return (
     <>
-    <header className="h-16 bg-surface-container-lowest border-b border-outline-variant flex items-center justify-between px-6 sticky top-0 z-30 shadow-sm">
-      <div className="flex items-center gap-4">
-        <h2 className="font-title-lg text-title-lg text-on-surface m-0">Inventory Dashboard</h2>
+    <header className="h-16 bg-surface-container-lowest border-b border-outline-variant flex items-center justify-between px-3 sm:px-6 sticky top-0 z-30 shadow-sm">
+      <div className="flex items-center gap-2 sm:gap-4">
+        {/* Hamburger menu for mobile */}
+        <button
+          onClick={onMenuToggle}
+          className="p-2 hover:bg-surface-container rounded-full text-on-surface-variant transition-colors lg:hidden"
+          title="Menu"
+        >
+          <span className="material-symbols-outlined">menu</span>
+        </button>
+        <h2 className="font-title-lg text-title-lg text-on-surface m-0 hidden sm:block">Inventory Dashboard</h2>
+        <h2 className="font-title-md text-on-surface m-0 sm:hidden">SIBOOK</h2>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1 sm:gap-2">
         {/* Notification Bell (moved) */}
         <div className="relative">
           <button 
@@ -170,7 +183,7 @@ const Header: React.FC = () => {
           </button>
 
           {isNotifOpen && (
-            <div className="absolute right-0 mt-2 w-80 bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="fixed top-[70px] left-4 right-4 sm:absolute sm:top-auto sm:left-auto sm:right-0 sm:mt-2 sm:w-80 bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
               <div className="p-4 bg-surface-container-low border-b border-outline-variant flex justify-between items-center">
                 <p className="font-title-sm text-on-surface">Notifikasi</p>
                 <button 
@@ -222,7 +235,7 @@ const Header: React.FC = () => {
           )}
         </div>
 
-        <div className="h-8 w-px bg-outline-variant mx-2"></div>
+        <div className="h-8 w-px bg-outline-variant mx-0.5 sm:mx-2 hidden sm:block"></div>
 
         {/* About / Help Button (moved) */}
         <div className="relative">
@@ -236,13 +249,13 @@ const Header: React.FC = () => {
         </div>
 
         {/* User Profile Info - Link to Settings */}
-        <Link to="/settings" className="flex items-center gap-3 cursor-pointer group px-2 py-1 rounded-lg hover:bg-surface-container transition-colors">
+        <Link to="/settings" className="flex items-center gap-2 sm:gap-3 cursor-pointer group px-1 sm:px-2 py-1 rounded-lg hover:bg-surface-container transition-colors">
           <img 
             alt="User Avatar" 
             className="w-8 h-8 rounded-full border border-outline-variant group-hover:border-primary transition-colors object-cover" 
             src={avatarUrl} 
           />
-          <div className="hidden lg:block text-left">
+          <div className="hidden md:block text-left">
             <p className="font-title-sm text-[13px] text-on-surface group-hover:text-primary transition-colors leading-none mb-1 truncate max-w-[120px]">
               {displayName}
             </p>

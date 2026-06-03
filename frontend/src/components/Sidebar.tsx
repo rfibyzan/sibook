@@ -1,7 +1,12 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-const Sidebar: React.FC = () => {
+interface SidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => {
   const location = useLocation();
   const { profile } = useAuth();
   const userRole = profile?.role || 'Staff Gudang';
@@ -24,34 +29,62 @@ const Sidebar: React.FC = () => {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <nav className="bg-surface dark:bg-inverse-surface text-primary dark:text-inverse-primary font-body-md text-body-md h-screen w-64 fixed left-0 top-0 border-r border-outline-variant dark:border-outline flex flex-col py-6 z-20">
-      <div className="px-6 mb-8 flex items-center gap-3">
-        <span className="material-symbols-outlined text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>menu_book</span>
-        <div>
-          <h1 className="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed">SIBOOK</h1>
-          <p className="font-body-sm text-body-sm text-secondary">System Inventory Book</p>
+    <>
+      {/* Mobile Backdrop */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-30 lg:hidden"
+          onClick={onClose}
+        />
+      )}
+
+      {/* Sidebar Nav */}
+      <nav
+        className={`
+          bg-surface dark:bg-inverse-surface text-primary dark:text-inverse-primary
+          font-body-md text-body-md h-screen w-64 fixed left-0 top-0
+          border-r border-outline-variant dark:border-outline flex flex-col py-6 z-40
+          transition-transform duration-300 ease-in-out
+          ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+          lg:translate-x-0
+        `}
+      >
+        <div className="px-6 mb-8 flex items-center gap-3">
+          <span className="material-symbols-outlined text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>menu_book</span>
+          <div>
+            <h1 className="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed">SIBOOK</h1>
+            <p className="font-body-sm text-body-sm text-secondary">System Inventory Book</p>
+          </div>
+          {/* Close button for mobile */}
+          <button
+            onClick={onClose}
+            className="ml-auto p-1.5 hover:bg-surface-container rounded-full text-secondary lg:hidden"
+          >
+            <span className="material-symbols-outlined text-[20px]">close</span>
+          </button>
         </div>
-      </div>
-      <ul className="flex-1 px-4 space-y-1">
-        {filteredMenu.map((item) => (
-          <li key={item.path}>
-            <Link
-              to={item.path}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors cursor-pointer active:opacity-80 ${
-                isActive(item.path)
-                  ? 'text-primary dark:text-primary-fixed font-bold border-r-4 border-primary dark:border-primary-fixed bg-primary-container/10'
-                  : 'text-secondary dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed hover:bg-surface-container-high dark:hover:bg-surface-container-low'
-              }`}
-            >
-              <span className="material-symbols-outlined" style={isActive(item.path) ? { fontVariationSettings: "'FILL' 1" } : {}}>
-                {item.icon}
-              </span>
-              {item.name}
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </nav>
+        <ul className="flex-1 px-4 space-y-1 overflow-y-auto">
+          {filteredMenu.map((item) => (
+            <li key={item.path}>
+              <Link
+                to={item.path}
+                onClick={onClose}
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors cursor-pointer active:opacity-80 ${
+                  isActive(item.path)
+                    ? 'text-primary dark:text-primary-fixed font-bold border-r-4 border-primary dark:border-primary-fixed bg-primary-container/10'
+                    : 'text-secondary dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed hover:bg-surface-container-high dark:hover:bg-surface-container-low'
+                }`}
+              >
+                <span className="material-symbols-outlined" style={isActive(item.path) ? { fontVariationSettings: "'FILL' 1" } : {}}>
+                  {item.icon}
+                </span>
+                {item.name}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    </>
   );
 };
 

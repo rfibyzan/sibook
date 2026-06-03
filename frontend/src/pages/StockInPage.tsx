@@ -258,8 +258,68 @@ const StockInPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Table Area */}
-            <div className="flex-1 overflow-x-auto">
+            {/* Cart Mobile Area */}
+            <div className="md:hidden flex-1 overflow-y-auto bg-surface-container-lowest">
+              {cart.length > 0 ? (
+                <div className="space-y-3 p-4">
+                  {currentCartItems.map(item => (
+                    <div key={item.id} className="bg-surface border border-outline-variant rounded-2xl p-4 flex flex-col gap-3">
+                      <div className="flex justify-between items-start gap-2">
+                        <div>
+                          <p className="font-bold text-on-surface line-clamp-2">{item.judul}</p>
+                          <p className="text-xs text-secondary mt-0.5">{item.isbn}</p>
+                        </div>
+                        <button onClick={() => removeFromCart(item.id)} className="p-1.5 text-outline hover:bg-error/10 hover:text-error rounded-full transition-all shrink-0">
+                          <span className="material-symbols-outlined text-[18px]">delete</span>
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 pt-3 border-t border-outline-variant/50">
+                        <div>
+                          <p className="text-[10px] text-secondary font-bold uppercase tracking-wider mb-1">Jumlah</p>
+                          <div className="flex items-center justify-center border border-outline-variant rounded-xl bg-surface-container-low px-2 py-1 w-full max-w-[100px]">
+                            <input 
+                              type="text"
+                              className="w-full text-center font-bold text-on-surface bg-transparent outline-none text-sm"
+                              value={item.quantity === '' ? '' : formatNumber(item.quantity)}
+                              onChange={(e) => updateQuantity(item.id, parseNumber(e.target.value))}
+                              onBlur={() => { if (item.quantity === '' || item.quantity === 0) updateQuantity(item.id, 1) }}
+                            />
+                            <span className="text-[10px] text-secondary font-bold ml-1">PCS</span>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-secondary font-bold uppercase tracking-wider mb-1">Harga Beli</p>
+                          <div className="flex items-center border border-outline-variant rounded-xl bg-surface-container-low px-2 py-1">
+                            <span className="text-[10px] text-secondary font-bold mr-1">Rp</span>
+                            <input 
+                              type="text"
+                              className="w-full text-right font-bold text-on-surface bg-transparent outline-none text-sm font-mono"
+                              value={item.harga_beli === '' ? '' : formatNumber(item.harga_beli)}
+                              onChange={(e) => updateHargaBeli(item.id, parsePrice(e.target.value))}
+                              onBlur={() => { if (item.harga_beli === '') updateHargaBeli(item.id, 0) }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center pt-2 border-t border-outline-variant/30 mt-1">
+                        <p className="text-[10px] text-secondary font-bold uppercase tracking-wider">Subtotal</p>
+                        <p className="font-bold text-primary font-data-tabular">Rp {((typeof item.quantity === 'number' ? item.quantity : 0) * (typeof item.harga_beli === 'number' ? item.harga_beli : 0)).toLocaleString('id-ID')}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-20 text-center">
+                  <div className="flex flex-col items-center gap-2 text-secondary opacity-50">
+                    <span className="material-symbols-outlined text-5xl">inventory</span>
+                    <p className="text-sm italic">Keranjang restock masih kosong.</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Table Area (Desktop) */}
+            <div className="hidden md:block flex-1 overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead className="bg-surface-container-low border-b border-outline-variant sticky top-0">
                   <tr>
@@ -299,7 +359,7 @@ const StockInPage: React.FC = () => {
                         />
                       </td>
                       <td className="px-4 py-6 text-right font-data-tabular text-on-surface font-bold">
-                        Rp {((typeof item.quantity === 'number' ? item.quantity : 0) * (typeof item.harga_beli === 'number' ? item.harga_beli : 0)).toLocaleString()}
+                        Rp {((typeof item.quantity === 'number' ? item.quantity : 0) * (typeof item.harga_beli === 'number' ? item.harga_beli : 0)).toLocaleString('id-ID')}
                       </td>
                       <td className="px-4 py-6 text-right">
                         <button onClick={() => removeFromCart(item.id)} className="p-2 text-outline hover:bg-error/10 hover:text-error rounded-full transition-all">

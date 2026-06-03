@@ -809,8 +809,8 @@ const ReportsPage: React.FC = () => {
         </div>
 
         {/* Transaction Table */}
-        <div id="print-area" className="bg-surface-container-lowest border border-outline-variant rounded-[32px] overflow-hidden shadow-sm">
-          <div className="p-8 border-b border-outline-variant flex justify-between items-center">
+        <div id="print-area" className="bg-transparent md:bg-surface-container-lowest md:border md:border-outline-variant md:rounded-[32px] overflow-hidden md:shadow-sm">
+          <div className="hidden md:flex p-8 border-b border-outline-variant justify-between items-center bg-surface-container-lowest">
             <div>
               <h3 className="font-title-lg text-on-surface">Riwayat Transaksi</h3>
               <p className="text-body-sm text-secondary mt-1">Gabungan data stok masuk dan keluar</p>
@@ -818,7 +818,55 @@ const ReportsPage: React.FC = () => {
             <span className="text-body-sm text-secondary">{filteredCombinedRecords.length} Transaksi terfilter</span>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="md:hidden flex justify-between items-center mb-4 px-1">
+             <div>
+               <h3 className="font-title-lg text-on-surface">Riwayat Transaksi</h3>
+               <p className="text-body-sm text-secondary mt-0.5">{filteredCombinedRecords.length} Transaksi terfilter</p>
+             </div>
+          </div>
+
+          {/* Mobile Card Layout */}
+          <div className="md:hidden space-y-3 mb-4">
+            {currentRecords.map((trans) => (
+              <div 
+                key={trans.id} 
+                onClick={() => setSelectedTransaction(trans)}
+                className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-4 shadow-sm flex flex-col gap-3 cursor-pointer hover:bg-primary/[0.02] transition-colors"
+              >
+                <div className="flex justify-between items-start gap-2">
+                  <div>
+                    <p className="font-bold text-primary font-mono text-[13px]">{trans.label}</p>
+                    <p className="text-[11px] text-secondary mt-0.5">
+                      {new Date(trans.dibuat_pada).toLocaleString('id-ID', {
+                        day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                      })}
+                    </p>
+                  </div>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${trans.type === 'keluar' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+                    {trans.type === 'keluar' ? 'Penjualan' : 'Restock'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-end pt-2 border-t border-outline-variant/50">
+                  <div>
+                    <p className="text-[10px] text-secondary font-bold uppercase tracking-wider mb-0.5">Dikerjakan Oleh</p>
+                    <p className="text-body-sm text-on-surface-variant font-medium">{trans.user}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[11px] font-bold text-on-surface bg-surface-container px-2 py-0.5 rounded inline-block mb-1">{trans.totalQty} pcs</p>
+                    <p className="font-bold text-on-surface text-[14px]">Rp {trans.totalAmount.toLocaleString('id-ID')}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {filteredCombinedRecords.length === 0 && (
+              <div className="py-16 text-center text-secondary italic bg-surface-container-lowest rounded-2xl border border-outline-variant">
+                Tidak ada data riwayat transaksi yang cocok dengan filter.
+              </div>
+            )}
+          </div>
+
+          {/* Desktop Table Layout */}
+          <div className="hidden md:block overflow-x-auto bg-surface-container-lowest">
             <table className="w-full text-left border-collapse">
               <thead className="bg-surface-container-low border-b border-outline-variant">
                 <tr>
@@ -859,7 +907,7 @@ const ReportsPage: React.FC = () => {
                       {trans.totalQty} pcs
                     </td>
                     <td className="px-8 py-5 text-right font-data-tabular font-bold text-on-surface">
-                      Rp {trans.totalAmount.toLocaleString()}
+                      Rp {trans.totalAmount.toLocaleString('id-ID')}
                     </td>
                   </tr>
                 ))}
@@ -874,7 +922,7 @@ const ReportsPage: React.FC = () => {
             </table>
           </div>
           {!loading && totalPages > 1 && (
-            <div className="no-print">
+            <div className="no-print md:border-t border-outline-variant rounded-2xl md:rounded-none border border-outline-variant md:border-0 bg-surface-container-lowest overflow-hidden">
               <Pagination
                 currentPage={currentPage}
                 totalPages={totalPages}
@@ -956,8 +1004,8 @@ const ReportsPage: React.FC = () => {
         </div>
 
         {/* Inventory Status Table */}
-        <div id="print-area" className="bg-surface-container-lowest border border-outline-variant rounded-[32px] overflow-hidden shadow-sm">
-          <div className="p-8 border-b border-outline-variant flex justify-between items-center">
+        <div id="print-area" className="bg-transparent md:bg-surface-container-lowest md:border md:border-outline-variant md:rounded-[32px] overflow-hidden md:shadow-sm">
+          <div className="hidden md:flex p-8 border-b border-outline-variant justify-between items-center bg-surface-container-lowest">
             <div>
               <h3 className="font-title-lg text-on-surface">Kondisi Stok Buku Aktual</h3>
               <p className="text-body-sm text-secondary mt-1">Laporan stok real-time seluruh inventori</p>
@@ -965,7 +1013,55 @@ const ReportsPage: React.FC = () => {
             <span className="text-body-sm text-secondary">{filteredBooks.length} Judul Buku</span>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="md:hidden flex justify-between items-center mb-4 px-1">
+             <div>
+               <h3 className="font-title-lg text-on-surface">Kondisi Stok Buku</h3>
+               <p className="text-body-sm text-secondary mt-0.5">{filteredBooks.length} Judul Buku</p>
+             </div>
+          </div>
+
+          {/* Mobile Card Layout */}
+          <div className="md:hidden space-y-3 mb-4">
+            {filteredBooks.map((book) => {
+              const isOutOfStock = book.stok_saat_ini === 0;
+              const isLowStock = book.stok_saat_ini <= book.stok_minimum && book.stok_saat_ini > 0;
+              
+              return (
+                <div key={book.id} className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-4 shadow-sm flex flex-col gap-3">
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-bold text-on-surface text-[14px] leading-tight truncate">{book.judul}</p>
+                      <p className="text-[12px] text-secondary mt-0.5 truncate">{book.pengarang}</p>
+                      <p className="font-mono text-[11px] text-secondary mt-1">{book.isbn}</p>
+                    </div>
+                    <span className={`shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${
+                      isOutOfStock ? 'bg-rose-100 text-rose-700' : isLowStock ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
+                    }`}>
+                      {isOutOfStock ? 'Habis' : isLowStock ? 'Kritis' : 'Aman'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center pt-3 border-t border-outline-variant/50">
+                    <div>
+                      <p className="text-body-sm text-on-surface-variant line-clamp-1">{book.id_kategori ? (categoryMap[book.id_kategori] || 'Lainnya') : 'Lainnya'}</p>
+                      <p className="font-bold text-primary text-[13px] mt-0.5">Rp {book.harga_jual.toLocaleString('id-ID')}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] text-secondary font-bold uppercase tracking-wider mb-0.5">Stok Aktual</p>
+                      <p className="font-bold text-on-surface text-[14px]">{book.stok_saat_ini} <span className="text-secondary text-[11px] font-normal">/ min {book.stok_minimum}</span></p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+            {filteredBooks.length === 0 && (
+              <div className="py-16 text-center text-secondary italic bg-surface-container-lowest rounded-2xl border border-outline-variant">
+                Tidak ada data inventori buku yang cocok dengan filter.
+              </div>
+            )}
+          </div>
+
+          {/* Desktop Table Layout */}
+          <div className="hidden md:block overflow-x-auto bg-surface-container-lowest">
             <table className="w-full text-left border-collapse">
               <thead className="bg-surface-container-low border-b border-outline-variant">
                 <tr>
@@ -1000,7 +1096,7 @@ const ReportsPage: React.FC = () => {
                         {book.id_kategori ? (categoryMap[book.id_kategori] || 'Lainnya') : 'Lainnya'}
                       </td>
                       <td className="px-8 py-5 text-right font-data-tabular text-on-surface">
-                        Rp {book.harga_jual.toLocaleString()}
+                        Rp {book.harga_jual.toLocaleString('id-ID')}
                       </td>
                       <td className="px-8 py-5 text-center font-data-tabular font-bold text-on-surface">
                         {book.stok_saat_ini} pcs

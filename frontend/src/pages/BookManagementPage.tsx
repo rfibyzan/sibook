@@ -208,10 +208,10 @@ const BookManagementPage: React.FC = () => {
 
   return (
     <Layout>
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
         <div>
-          <h2 className="font-display-lg text-display-lg text-primary">Manajemen Buku</h2>
-          <p className="font-body-md text-body-md text-on-surface-variant mt-1">Kelola katalog buku langsung dari database Supabase.</p>
+          <h2 className="font-display-lg text-display-lg text-primary text-xl sm:text-2xl lg:text-display-lg">Manajemen Buku</h2>
+          <p className="font-body-md text-body-md text-on-surface-variant mt-1 text-sm sm:text-base">Kelola katalog buku langsung dari database Supabase.</p>
         </div>
         <button 
           onClick={() => {
@@ -221,7 +221,7 @@ const BookManagementPage: React.FC = () => {
             setSupSearch('');
             setIsModalOpen(true);
           }}
-          className="bg-primary text-white px-6 py-3 rounded-full font-bold shadow-lg hover:bg-primary/90 transition-all flex items-center gap-2"
+          className="bg-primary text-white px-5 sm:px-6 py-2.5 sm:py-3 rounded-full font-bold shadow-lg hover:bg-primary/90 transition-all flex items-center gap-2 w-full sm:w-auto justify-center"
         >
           <span className="material-symbols-outlined text-[20px]">add</span>
           Tambah Buku
@@ -229,15 +229,15 @@ const BookManagementPage: React.FC = () => {
       </div>
 
       {/* Search Filter */}
-      <div className="flex flex-col md:flex-row gap-4 mb-6">
+      <div className="flex flex-col md:flex-row gap-4 mb-4 sm:mb-6">
         <div className="flex-1 relative">
           <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-secondary">search</span>
           <input 
             type="text" 
-            placeholder="Cari buku berdasarkan judul, penulis, ISBN, atau penerbit..." 
+            placeholder="Cari judul, penulis, ISBN..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full h-12 pl-12 pr-4 rounded-2xl border border-outline-variant bg-surface-container-lowest focus:border-primary outline-none transition-all"
+            className="w-full h-11 sm:h-12 pl-12 pr-4 rounded-2xl border border-outline-variant bg-surface-container-lowest focus:border-primary outline-none transition-all text-sm sm:text-base"
           />
         </div>
       </div>
@@ -248,85 +248,142 @@ const BookManagementPage: React.FC = () => {
           <p className="mt-4 text-secondary">Memuat data buku...</p>
         </div>
       ) : (
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-[32px] overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-surface-container-low border-b border-outline-variant">
-                  <th className="py-4 px-8 font-label-uppercase text-secondary text-[11px] tracking-widest uppercase">ISBN</th>
-                  <th className="py-4 px-8 font-label-uppercase text-secondary text-[11px] tracking-widest uppercase">Judul & Penulis</th>
-                  <th className="py-4 px-8 font-label-uppercase text-secondary text-[11px] tracking-widest uppercase text-center">Stok</th>
-                  <th className="py-4 px-8 font-label-uppercase text-secondary text-[11px] tracking-widest uppercase text-right">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-outline-variant">
-                {currentBooks.map((book) => {
-                  const status = getStatusInfo(book.stok_saat_ini, book.stok_minimum);
-                  return (
-                    <tr key={book.id} className="hover:bg-primary/[0.02] group transition-colors">
-                      <td className="py-5 px-8 font-mono text-secondary text-sm">{book.isbn}</td>
-                      <td className="py-5 px-8">
-                        <p className="font-title-md text-on-surface font-bold leading-tight">{book.judul}</p>
-                        <p className="text-secondary text-body-sm mt-0.5">
-                          {book.pengarang} {book.penerbit ? `• ${book.penerbit}` : ''}
-                        </p>
-                      </td>
-                      <td className="py-5 px-8 text-center">
-                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider border ${status.color}`}>
-                          {formatNumber(book.stok_saat_ini)} {status.label}
-                        </span>
-                      </td>
-                      <td className="py-5 px-8 text-right">
-                        <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button 
-                            onClick={() => handleEditClick(book)}
-                            className="p-2 hover:bg-primary/10 rounded-full text-secondary hover:text-primary transition-all"
-                          >
-                            <span className="material-symbols-outlined text-[20px]">edit</span>
-                          </button>
-                          <button 
-                            onClick={() => deleteBook(book.id)}
-                            className="p-2 hover:bg-error/10 rounded-full text-secondary hover:text-error transition-all"
-                          >
-                            <span className="material-symbols-outlined text-[20px]">delete</span>
-                          </button>
-                        </div>
+        <>
+          {/* Mobile Card Layout */}
+          <div className="md:hidden space-y-3">
+            {currentBooks.map((book) => {
+              const status = getStatusInfo(book.stok_saat_ini, book.stok_minimum);
+              return (
+                <div key={book.id} className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-4 shadow-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-title-md text-on-surface font-bold leading-tight truncate">{book.judul}</p>
+                      <p className="text-secondary text-body-sm mt-0.5 truncate">
+                        {book.pengarang} {book.penerbit ? `• ${book.penerbit}` : ''}
+                      </p>
+                      <p className="font-mono text-secondary text-[11px] mt-1">{book.isbn}</p>
+                    </div>
+                    <div className="flex gap-1 shrink-0">
+                      <button 
+                        onClick={() => handleEditClick(book)}
+                        className="p-2 hover:bg-primary/10 rounded-full text-secondary hover:text-primary transition-all"
+                      >
+                        <span className="material-symbols-outlined text-[20px]">edit</span>
+                      </button>
+                      <button 
+                        onClick={() => deleteBook(book.id)}
+                        className="p-2 hover:bg-error/10 rounded-full text-secondary hover:text-error transition-all"
+                      >
+                        <span className="material-symbols-outlined text-[20px]">delete</span>
+                      </button>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between">
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider border ${status.color}`}>
+                      {formatNumber(book.stok_saat_ini)} {status.label}
+                    </span>
+                    <span className="text-secondary text-body-sm font-medium">Rp {formatNumber(book.harga_jual)}</span>
+                  </div>
+                </div>
+              );
+            })}
+            {currentBooks.length === 0 && (
+              <div className="py-16 text-center text-secondary italic bg-surface-container-lowest rounded-2xl border border-outline-variant">
+                Tidak ada buku yang sesuai dengan pencarian.
+              </div>
+            )}
+            {totalPages > 1 && (
+              <div className="rounded-2xl overflow-hidden border border-outline-variant">
+                <Pagination 
+                  currentPage={currentPage} 
+                  totalPages={totalPages} 
+                  onPageChange={setCurrentPage} 
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Desktop Table Layout */}
+          <div className="hidden md:block bg-surface-container-lowest border border-outline-variant rounded-[32px] overflow-hidden shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-surface-container-low border-b border-outline-variant">
+                    <th className="py-4 px-8 font-label-uppercase text-secondary text-[11px] tracking-widest uppercase">ISBN</th>
+                    <th className="py-4 px-8 font-label-uppercase text-secondary text-[11px] tracking-widest uppercase">Judul & Penulis</th>
+                    <th className="py-4 px-8 font-label-uppercase text-secondary text-[11px] tracking-widest uppercase text-center">Stok</th>
+                    <th className="py-4 px-8 font-label-uppercase text-secondary text-[11px] tracking-widest uppercase text-right">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-outline-variant">
+                  {currentBooks.map((book) => {
+                    const status = getStatusInfo(book.stok_saat_ini, book.stok_minimum);
+                    return (
+                      <tr key={book.id} className="hover:bg-primary/[0.02] group transition-colors">
+                        <td className="py-5 px-8 font-mono text-secondary text-sm">{book.isbn}</td>
+                        <td className="py-5 px-8">
+                          <p className="font-title-md text-on-surface font-bold leading-tight">{book.judul}</p>
+                          <p className="text-secondary text-body-sm mt-0.5">
+                            {book.pengarang} {book.penerbit ? `• ${book.penerbit}` : ''}
+                          </p>
+                        </td>
+                        <td className="py-5 px-8 text-center">
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider border ${status.color}`}>
+                            {formatNumber(book.stok_saat_ini)} {status.label}
+                          </span>
+                        </td>
+                        <td className="py-5 px-8 text-right">
+                          <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button 
+                              onClick={() => handleEditClick(book)}
+                              className="p-2 hover:bg-primary/10 rounded-full text-secondary hover:text-primary transition-all"
+                            >
+                              <span className="material-symbols-outlined text-[20px]">edit</span>
+                            </button>
+                            <button 
+                              onClick={() => deleteBook(book.id)}
+                              className="p-2 hover:bg-error/10 rounded-full text-secondary hover:text-error transition-all"
+                            >
+                              <span className="material-symbols-outlined text-[20px]">delete</span>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {currentBooks.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="px-8 py-20 text-center text-secondary italic">
+                        Tidak ada buku yang sesuai dengan pencarian.
                       </td>
                     </tr>
-                  );
-                })}
-                {currentBooks.length === 0 && (
-                  <tr>
-                    <td colSpan={4} className="px-8 py-20 text-center text-secondary italic">
-                      Tidak ada buku yang sesuai dengan pencarian.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            {totalPages > 1 && (
+              <Pagination 
+                currentPage={currentPage} 
+                totalPages={totalPages} 
+                onPageChange={setCurrentPage} 
+              />
+            )}
           </div>
-          {totalPages > 1 && (
-            <Pagination 
-              currentPage={currentPage} 
-              totalPages={totalPages} 
-              onPageChange={setCurrentPage} 
-            />
-          )}
-        </div>
+        </>
       )}
 
       {/* Add/Edit Book Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="bg-surface-container-lowest w-full max-w-xl rounded-[32px] shadow-2xl overflow-visible animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-8 border-b border-outline-variant flex justify-between items-center">
-              <h3 className="font-headline-sm text-on-surface">{editingBookId ? 'Edit Data Buku' : 'Tambah Buku Baru'}</h3>
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-4 bg-black/40 backdrop-blur-sm">
+          <div className="bg-surface-container-lowest w-full sm:max-w-xl rounded-t-[24px] sm:rounded-[32px] shadow-2xl overflow-visible animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] sm:max-h-[85vh] flex flex-col">
+            <div className="p-5 sm:p-8 border-b border-outline-variant flex justify-between items-center shrink-0">
+              <h3 className="font-headline-sm text-on-surface text-lg sm:text-xl">{editingBookId ? 'Edit Data Buku' : 'Tambah Buku Baru'}</h3>
               <button onClick={() => { setIsModalOpen(false); setEditingBookId(null); }} className="p-2 hover:bg-surface-container rounded-full text-secondary">
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
             
-            <form onSubmit={handleAddBook} className="p-8 space-y-6">
+            <form onSubmit={handleAddBook} className="p-5 sm:p-8 space-y-5 sm:space-y-6 overflow-y-auto flex-1">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="flex flex-col gap-1.5">
                   <label className="font-label-uppercase text-secondary text-[11px] uppercase tracking-wider">ISBN</label>
@@ -445,11 +502,11 @@ const BookManagementPage: React.FC = () => {
               </div>
 
 
-              <div className="pt-6 flex gap-4">
-                <button type="button" onClick={() => { setIsModalOpen(false); setEditingBookId(null); }} className="flex-1 py-4 border border-outline-variant rounded-full font-bold text-on-surface hover:bg-surface-container transition-all">Batal</button>
-                <button type="submit" className="flex-1 py-4 bg-primary text-white rounded-full font-bold shadow-lg hover:bg-primary/90 transition-all flex items-center justify-center gap-2">
-                  <span className="material-symbols-outlined text-[20px]">{editingBookId ? 'check_circle' : 'add_circle'}</span>
-                  {editingBookId ? 'Perbarui Data' : 'Simpan Buku'}
+              <div className="pt-4 sm:pt-6 flex gap-3 sm:gap-4 pb-safe">
+                <button type="button" onClick={() => { setIsModalOpen(false); setEditingBookId(null); }} className="flex-1 py-3 sm:py-4 border border-outline-variant rounded-full font-bold text-on-surface hover:bg-surface-container transition-all text-sm sm:text-base">Batal</button>
+                <button type="submit" className="flex-1 py-3 sm:py-4 bg-primary text-white rounded-full font-bold shadow-lg hover:bg-primary/90 transition-all flex items-center justify-center gap-2 text-sm sm:text-base">
+                  <span className="material-symbols-outlined text-[18px] sm:text-[20px]">{editingBookId ? 'check_circle' : 'add_circle'}</span>
+                  {editingBookId ? 'Perbarui' : 'Simpan'}
                 </button>
               </div>
             </form>

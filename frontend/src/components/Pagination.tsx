@@ -38,45 +38,53 @@ const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPage
   };
 
   return (
-    <div className="flex items-center justify-between px-6 py-4 border-t border-outline-variant bg-surface-container-lowest">
-      <p className="text-body-sm text-secondary">
-        Halaman <span className="font-bold text-on-surface">{currentPage}</span> dari <span className="font-bold text-on-surface">{totalPages}</span>
+    <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-t border-outline-variant bg-surface-container-lowest gap-2">
+      <p className="text-body-sm text-secondary text-[12px] sm:text-sm whitespace-nowrap">
+        <span className="font-bold text-on-surface">{currentPage}</span> / <span className="font-bold text-on-surface">{totalPages}</span>
       </p>
       
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-0.5 sm:gap-1">
         <button
           onClick={handlePrev}
           disabled={currentPage === 1}
-          className="p-2 flex items-center justify-center rounded-lg text-secondary hover:bg-surface-container disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="p-1.5 sm:p-2 flex items-center justify-center rounded-lg text-secondary hover:bg-surface-container disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
-          <span className="material-symbols-outlined text-[20px]">chevron_left</span>
+          <span className="material-symbols-outlined text-[18px] sm:text-[20px]">chevron_left</span>
         </button>
 
-        {getPageNumbers().map((page, index) => (
-          <React.Fragment key={index}>
-            {page === '...' ? (
-              <span className="w-8 flex justify-center text-secondary">...</span>
-            ) : (
-              <button
-                onClick={() => onPageChange(page as number)}
-                className={`w-8 h-8 rounded-lg flex items-center justify-center text-body-sm font-medium transition-colors ${
-                  currentPage === page
-                    ? 'bg-primary text-white shadow-sm'
-                    : 'text-on-surface hover:bg-surface-container'
-                }`}
-              >
-                {page}
-              </button>
-            )}
-          </React.Fragment>
-        ))}
+        {/* Page numbers hidden on very small screens, shown on sm+ */}
+        <div className="hidden sm:flex items-center gap-1">
+          {getPageNumbers().map((page, index) => (
+            <React.Fragment key={index}>
+              {page === '...' ? (
+                <span className="w-8 flex justify-center text-secondary">...</span>
+              ) : (
+                <button
+                  onClick={() => onPageChange(page as number)}
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center text-body-sm font-medium transition-colors ${
+                    currentPage === page
+                      ? 'bg-primary text-white shadow-sm'
+                      : 'text-on-surface hover:bg-surface-container'
+                  }`}
+                >
+                  {page}
+                </button>
+              )}
+            </React.Fragment>
+          ))}
+        </div>
+
+        {/* Compact current page indicator for mobile */}
+        <span className="sm:hidden px-3 py-1.5 rounded-lg bg-primary text-white text-[12px] font-bold">
+          {currentPage}
+        </span>
 
         <button
           onClick={handleNext}
           disabled={currentPage === totalPages}
-          className="p-2 flex items-center justify-center rounded-lg text-secondary hover:bg-surface-container disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="p-1.5 sm:p-2 flex items-center justify-center rounded-lg text-secondary hover:bg-surface-container disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
-          <span className="material-symbols-outlined text-[20px]">chevron_right</span>
+          <span className="material-symbols-outlined text-[18px] sm:text-[20px]">chevron_right</span>
         </button>
       </div>
     </div>

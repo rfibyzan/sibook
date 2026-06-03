@@ -250,8 +250,69 @@ const UsersPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-surface-container-lowest border border-outline-variant rounded-[32px] overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
+      <div className="bg-transparent md:bg-surface-container-lowest md:border md:border-outline-variant md:rounded-[32px] overflow-hidden md:shadow-sm">
+        {/* Mobile Card Layout */}
+        <div className="md:hidden space-y-3 mb-4">
+          {loading ? (
+            <div className="py-20 text-center">
+              <span className="material-symbols-outlined animate-spin text-primary text-4xl">progress_activity</span>
+            </div>
+          ) : currentProfiles.map((profile) => (
+            <div key={profile.id} className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-4 shadow-sm flex flex-col gap-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <img 
+                    src={profile.avatar_url || `https://ui-avatars.com/api/?name=${profile.full_name}&background=random`} 
+                    alt={profile.full_name}
+                    className="w-10 h-10 rounded-full border border-outline-variant object-cover shrink-0"
+                  />
+                  <div>
+                    <p className="font-title-md text-on-surface font-bold leading-tight">{profile.full_name || 'Tanpa Nama'}</p>
+                    <p className="text-[12px] text-primary font-medium mt-0.5 truncate max-w-[150px] sm:max-w-none">{profile.email || '-'}</p>
+                  </div>
+                </div>
+                <div className="flex gap-1 shrink-0">
+                  {canManage(profile.role) && profile.id !== currentUser?.id && (
+                    <>
+                      <button 
+                        onClick={() => { setEditingProfile(profile); setIsEditModalOpen(true); }}
+                        className="p-2 hover:bg-primary/10 rounded-full text-secondary hover:text-primary transition-all"
+                        title="Edit Jabatan"
+                      >
+                        <span className="material-symbols-outlined text-[20px]">edit</span>
+                      </button>
+                      <button 
+                        onClick={() => deleteUser(profile.id, profile.full_name)}
+                        className="p-2 hover:bg-error/10 rounded-full text-secondary hover:text-error transition-all"
+                        title="Hapus User"
+                      >
+                        <span className="material-symbols-outlined text-[20px]">delete_forever</span>
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center justify-between mt-1 pt-3 border-t border-outline-variant/50">
+                <p className="text-[11px] text-outline font-medium tracking-wide">ID: {profile.id.slice(0, 8)}</p>
+                <span className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider border ${
+                  profile.role === 'Owner' ? 'bg-error/10 text-error border-error/20' :
+                  profile.role === 'Manager' ? 'bg-primary/10 text-primary border-primary/20' :
+                  'bg-secondary/10 text-secondary border-secondary/20'
+                }`}>
+                  {profile.role || 'Staff Gudang'}
+                </span>
+              </div>
+            </div>
+          ))}
+          {!loading && currentProfiles.length === 0 && (
+            <div className="py-16 text-center text-secondary italic bg-surface-container-lowest rounded-2xl border border-outline-variant">
+              Tidak ada staf yang sesuai dengan filter.
+            </div>
+          )}
+        </div>
+
+        {/* Desktop Table Layout */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead className="bg-surface-container-low border-b border-outline-variant">
               <tr>
@@ -330,11 +391,13 @@ const UsersPage: React.FC = () => {
           </table>
         </div>
         {!loading && totalPages > 1 && (
-          <Pagination 
-            currentPage={currentPage} 
-            totalPages={totalPages} 
-            onPageChange={setCurrentPage} 
-          />
+          <div className="md:border-t border-outline-variant rounded-2xl md:rounded-none border border-outline-variant md:border-0 bg-surface-container-lowest overflow-hidden">
+            <Pagination 
+              currentPage={currentPage} 
+              totalPages={totalPages} 
+              onPageChange={setCurrentPage} 
+            />
+          </div>
         )}
       </div>
 
